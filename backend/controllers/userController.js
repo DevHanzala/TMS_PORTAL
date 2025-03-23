@@ -1,18 +1,23 @@
+// controllers/userController.js
 import User from "../models/userModel.js";
+import ExEmployee from "../models/exEmployeeModel.js"; // Import ExEmployee model for moving deleted users
 
 // ✅ Fetch all users
 export const getUsers = async (req, res) => {
   try {
+    // Retrieve all users from the database
     const users = await User.findAll();
 
-    // Convert image binary data to base64 for client-side display
+    // Convert binary image data to base64 for client-side rendering
     const usersWithImages = users.map((user) => ({
       ...user.toJSON(),
       image: user.image ? `data:image/jpeg;base64,${user.image.toString("base64")}` : null,
     }));
 
+    // Send successful response with user data
     res.status(200).json(usersWithImages);
   } catch (error) {
+    // Log error details and send a server error response
     console.error("Fetch error:", error.stack);
     res.status(500).json({ message: "Server Error", error: error.message });
   }
@@ -21,6 +26,7 @@ export const getUsers = async (req, res) => {
 // ✅ Register a new user
 export const registerUser = async (req, res) => {
   try {
+    // Destructure user data from request body
     const {
       employee_id,
       registration_date,
@@ -54,7 +60,7 @@ export const registerUser = async (req, res) => {
       disease_description,
     } = req.body;
 
-    // Validate required fields based on the model
+    // Define required fields and validate their presence
     const requiredFields = {
       employee_id,
       registration_date,
@@ -83,22 +89,22 @@ export const registerUser = async (req, res) => {
       }
     }
 
-    // Conditional validation for disease_description
+    // Validate disease_description if has_disease is "Yes"
     if (has_disease === "Yes" && (!disease_description || disease_description.trim() === "")) {
       return res.status(400).json({ message: "Disease description is required when has_disease is 'Yes'" });
     }
 
-    // Validate image format
+    // Validate image format (only JPEG allowed)
     if (req.file && req.file.mimetype !== "image/jpeg") {
       return res.status(400).json({ message: "Only JPEG images are allowed." });
     }
-    const image = req.file ? req.file.buffer : null;
+    const image = req.file ? req.file.buffer : null; // Store image as buffer or null if not provided
 
-    // Check for existing user
+    // Check if user with this email already exists
     const userExists = await User.findOne({ where: { email } });
     if (userExists) return res.status(400).json({ message: "User already exists" });
 
-    // Parse skills safely
+    // Parse skills safely into an array
     let parsedSkills = null;
     if (skills) {
       try {
@@ -111,16 +117,21 @@ export const registerUser = async (req, res) => {
       }
     }
 
-    // Convert dates and times to appropriate formats
+    // Format dates to ensure valid Date objects
     const formattedRegistrationDate = new Date(registration_date);
     const formattedJoiningDate = new Date(joining_date);
     const formattedDob = new Date(dob);
 
-    if (isNaN(formattedRegistrationDate.getTime()) || isNaN(formattedJoiningDate.getTime()) || isNaN(formattedDob.getTime())) {
+    // Validate date formats
+    if (
+      isNaN(formattedRegistrationDate.getTime()) ||
+      isNaN(formattedJoiningDate.getTime()) ||
+      isNaN(formattedDob.getTime())
+    ) {
       return res.status(400).json({ message: "Invalid date format" });
     }
 
-    // Create the user with new fields
+    // Create a new user in the database
     const newUser = await User.create({
       employee_id,
       registration_date: formattedRegistrationDate,
@@ -155,9 +166,11 @@ export const registerUser = async (req, res) => {
       disease_description: disease_description || null,
     });
 
+    // Log success and send response
     console.log("User created:", newUser.toJSON());
     res.status(201).json({ message: "User registered successfully", user: newUser.toJSON() });
   } catch (error) {
+    // Handle errors (validation or server issues)
     console.error("Registration error:", error.stack);
     if (error.name === "SequelizeValidationError" || error.name === "SequelizeUniqueConstraintError") {
       return res.status(400).json({
@@ -172,20 +185,22 @@ export const registerUser = async (req, res) => {
 // ✅ Update user by ID
 export const updateUser = async (req, res) => {
   try {
+    // Find user by primary key (ID)
     const user = await User.findByPk(req.params.id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    const { 
-      employee_id, 
-      registration_date, 
-      joining_date, 
-      post_applied_for, 
-      full_name, 
-      gender, 
-      cnic, 
-      dob, 
-      permanent_address, 
-      contact_number, 
+    // Destructure updated data from request body
+    const {
+      employee_id,
+      registration_date,
+      joining_date,
+      post_applied_for,
+      full_name,
+      gender,
+      cnic,
+      dob,
+      permanent_address,
+      contact_number,
       email,
       degree,
       institute,
@@ -208,46 +223,49 @@ export const updateUser = async (req, res) => {
       disease_description,
     } = req.body;
 
+    // Validate image format if provided
     if (req.file && req.file.mimetype !== "image/jpeg") {
       return res.status(400).json({ message: "Only JPEG images are allowed." });
     }
-    const image = req.file ? req.file.buffer : user.image;
+    const image = req.file ? req.file.buffer : user.image; // Use new image or keep existing
 
-    // Conditional validation for disease_description during update
+    // Validate disease_description if has_disease is "Yes"
     if (has_disease === "Yes" && (!disease_description || disease_description.trim() === "")) {
       return res.status(400).json({ message: "Disease description is required when has_disease is 'Yes'" });
     }
 
-    // Parse skills safely (Fixed)
-    let parsedSkills = user.skills; // Default to existing skills
+    // Parse skills safely, defaulting to existing skills if not provided
+    let parsedSkills = user.skills;
     if (skills) {
       try {
-        parsedSkills = typeof skills === "string" 
-          ? JSON.parse(skills) // If skills is a JSON string like "[\"Java\", \"C++\"]"
-          : skills; // If already an array (unlikely from frontend)
+        parsedSkills = typeof skills === "string" ? JSON.parse(skills) : skills;
         if (!Array.isArray(parsedSkills) || parsedSkills.length > 5) {
           return res.status(400).json({ message: "Skills must be an array with a maximum of 5 items" });
         }
       } catch (error) {
-        // If parsing fails (e.g., "Java,C++,Designing"), assume it’s a comma-separated string
-        parsedSkills = skills.split(",").map(skill => skill.trim());
+        // Handle comma-separated skills string if JSON parsing fails
+        parsedSkills = skills.split(",").map((skill) => skill.trim());
         if (parsedSkills.length > 5) {
           return res.status(400).json({ message: "Skills must have a maximum of 5 items" });
         }
       }
     }
 
-    // Convert dates if provided
+    // Format dates if provided, otherwise use existing
     const formattedRegistrationDate = registration_date ? new Date(registration_date) : user.registration_date;
     const formattedJoiningDate = joining_date ? new Date(joining_date) : user.joining_date;
     const formattedDob = dob ? new Date(dob) : user.dob;
 
-    if ((registration_date && isNaN(formattedRegistrationDate.getTime())) ||
-        (joining_date && isNaN(formattedJoiningDate.getTime())) ||
-        (dob && isNaN(formattedDob.getTime()))) {
+    // Validate date formats
+    if (
+      (registration_date && isNaN(formattedRegistrationDate.getTime())) ||
+      (joining_date && isNaN(formattedJoiningDate.getTime())) ||
+      (dob && isNaN(formattedDob.getTime()))
+    ) {
       return res.status(400).json({ message: "Invalid date format" });
     }
 
+    // Update user with new or existing data
     await user.update({
       employee_id: employee_id || user.employee_id,
       registration_date: formattedRegistrationDate,
@@ -282,22 +300,35 @@ export const updateUser = async (req, res) => {
       disease_description: disease_description || user.disease_description,
     });
 
+    // Send successful response
     res.status(200).json({ message: "User updated successfully", user });
   } catch (error) {
+    // Log and handle update errors
     console.error("Update error:", error.stack);
     res.status(500).json({ message: "Update failed", error: error.message });
   }
 };
 
-// ✅ Delete user by ID
+// ✅ Delete user by ID and move to ex-employees
 export const deleteUser = async (req, res) => {
   try {
+    // Find user by ID
     const user = await User.findByPk(req.params.id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
+    // Move user data to ex-employees table with current date/time as exit_date
+    await ExEmployee.create({
+      ...user.toJSON(), // Copy all user data
+      exit_date: new Date(), // Add current date and time as exit_date
+    });
+
+    // Delete user from the users table
     await user.destroy();
-    res.status(200).json({ message: "User deleted successfully" });
+
+    // Send successful response
+    res.status(200).json({ message: "User deleted and moved to ex-employees successfully" });
   } catch (error) {
+    // Log and handle delete errors
     console.error("Delete error:", error.stack);
     res.status(500).json({ message: "Error deleting user", error: error.message });
   }

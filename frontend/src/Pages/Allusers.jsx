@@ -2,11 +2,11 @@ import React, { useEffect, useState } from "react";
 import { useUserStore } from "../Store/userStore";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Search, 
-  Trash2, 
-  Edit2, 
-  X, 
+import {
+  Search,
+  Trash2,
+  Edit2,
+  X,
   Eye,
   Download,
   User,
@@ -22,301 +22,23 @@ import {
   GraduationCap,
   DollarSign,
   FileText,
-  Contact, // Added for guardian_phone
-  UserPlus, // Added for reference_name
-  PhoneCall, // Added for reference_contact
-  Heart // Added for has_disease/disease_description
+  Contact,
+  UserPlus,
+  PhoneCall,
+  Heart,
 } from "lucide-react";
-import { PDFDownloadLink, Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
-
-// PDF styles with corrected border properties
-const styles = StyleSheet.create({
-  page: {
-    flexDirection: 'column',
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-    fontFamily: 'Helvetica',
-  },
-  section: {
-    margin: 10,
-    padding: 10,
-    borderWidth: 1,
-    borderStyle: 'solid',
-    borderColor: '#000000',
-    borderRadius: 5,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomStyle: 'solid',
-    borderBottomColor: '#000000',
-    paddingBottom: 10,
-    marginBottom: 10,
-  },
-  image: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    marginRight: 15,
-    borderWidth: 1,
-    borderStyle: 'solid',
-    borderColor: '#000000',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2563EB',
-  },
-  subtitle: {
-    fontSize: 12,
-    color: '#4B5563',
-  },
-  fieldGroup: {
-    marginBottom: 10,
-  },
-  fieldRow: {
-    flexDirection: 'row',
-    marginBottom: 8,
-    alignItems: 'center',
-  },
-  label: {
-    width: '35%',
-    fontSize: 11,
-    color: '#6B7280',
-    fontWeight: 'bold',
-  },
-  value: {
-    flex: 1,
-    fontSize: 11,
-    color: '#111827',
-    borderBottomWidth: 1,
-    borderBottomStyle: 'solid',
-    borderBottomColor: '#E5E7EB',
-    paddingBottom: 2,
-  },
-});
-
-// Helper function to format skills string
-const formatSkills = (skills) => {
-  if (!skills) return '';
-  if (Array.isArray(skills)) {
-    return skills.map(skill => String(skill).trim()).join(', ');
-  }
-  if (typeof skills === 'string') {
-    return skills.includes(',') 
-      ? skills.split(',').map(skill => skill.trim()).join(', ')
-      : skills;
-  }
-  return String(skills);
-};
-
-// PDF Document Component with new fields
-const UserPDF = ({ user }) => (
-  <Document>
-    <Page size="A4" style={styles.page}>
-      <View style={styles.section}>
-        <View style={styles.header}>
-          {user.image && (
-            <Image src={user.image} style={styles.image} />
-          )}
-          <View>
-            <Text style={styles.title}>{user.full_name}</Text>
-            <Text style={styles.subtitle}>{user.post_applied_for}</Text>
-            <Text style={styles.subtitle}>ID: {user.employee_id}</Text>
-          </View>
-        </View>
-
-        <View style={styles.fieldGroup}>
-          <Text style={[styles.subtitle, { marginBottom: 8, fontWeight: 'bold' }]}>Personal Information</Text>
-          <View style={styles.fieldRow}>
-            <Text style={styles.label}>Gender:</Text>
-            <Text style={styles.value}>{user.gender}</Text>
-          </View>
-          <View style={styles.fieldRow}>
-            <Text style={styles.label}>CNIC:</Text>
-            <Text style={styles.value}>{user.cnic}</Text>
-          </View>
-          <View style={styles.fieldRow}>
-            <Text style={styles.label}>Date of Birth:</Text>
-            <Text style={styles.value}>{new Date(user.dob).toLocaleDateString()}</Text>
-          </View>
-          <View style={styles.fieldRow}>
-            <Text style={styles.label}>Permanent Address:</Text>
-            <Text style={styles.value}>{user.permanent_address}</Text>
-          </View>
-          {/* Added: Guardian Phone */}
-          <View style={styles.fieldRow}>
-            <Text style={styles.label}>Guardian Phone:</Text>
-            <Text style={styles.value}>{user.guardian_phone}</Text>
-          </View>
-          {/* Added: Reference Name */}
-          {user.reference_name && (
-            <View style={styles.fieldRow}>
-              <Text style={styles.label}>Reference Name:</Text>
-              <Text style={styles.value}>{user.reference_name}</Text>
-            </View>
-          )}
-          {/* Added: Reference Contact */}
-          {user.reference_contact && (
-            <View style={styles.fieldRow}>
-              <Text style={styles.label}>Reference Contact:</Text>
-              <Text style={styles.value}>{user.reference_contact}</Text>
-            </View>
-          )}
-          {/* Added: Has Disease */}
-          <View style={styles.fieldRow}>
-            <Text style={styles.label}>Has Disease:</Text>
-            <Text style={styles.value}>{user.has_disease}</Text>
-          </View>
-          {/* Added: Disease Description */}
-          {user.disease_description && (
-            <View style={styles.fieldRow}>
-              <Text style={styles.label}>Disease Description:</Text>
-              <Text style={styles.value}>{user.disease_description}</Text>
-            </View>
-          )}
-        </View>
-
-        <View style={styles.fieldGroup}>
-          <Text style={[styles.subtitle, { marginBottom: 8, fontWeight: 'bold' }]}>Contact Information</Text>
-          <View style={styles.fieldRow}>
-            <Text style={styles.label}>Email:</Text>
-            <Text style={styles.value}>{user.email}</Text>
-          </View>
-          <View style={styles.fieldRow}>
-            <Text style={styles.label}>Contact Number:</Text>
-            <Text style={styles.value}>{user.contact_number}</Text>
-          </View>
-        </View>
-
-        <View style={styles.fieldGroup}>
-          <Text style={[styles.subtitle, { marginBottom: 8, fontWeight: 'bold' }]}>Employment Details</Text>
-          <View style={styles.fieldRow}>
-            <Text style={styles.label}>Employee ID:</Text>
-            <Text style={styles.value}>{user.employee_id}</Text>
-          </View>
-          <View style={styles.fieldRow}>
-            <Text style={styles.label}>Post Applied For:</Text>
-            <Text style={styles.value}>{user.post_applied_for}</Text>
-          </View>
-          <View style={styles.fieldRow}>
-            <Text style={styles.label}>Registration Date:</Text>
-            <Text style={styles.value}>{new Date(user.registration_date).toLocaleDateString()}</Text>
-          </View>
-          <View style={styles.fieldRow}>
-            <Text style={styles.label}>Joining Date:</Text>
-            <Text style={styles.value}>{new Date(user.joining_date).toLocaleDateString()}</Text>
-          </View>
-          {user.in_time && (
-            <View style={styles.fieldRow}>
-              <Text style={styles.label}>In Time:</Text>
-              <Text style={styles.value}>{user.in_time}</Text>
-            </View>
-          )}
-          {user.out_time && (
-            <View style={styles.fieldRow}>
-              <Text style={styles.label}>Out Time:</Text>
-              <Text style={styles.value}>{user.out_time}</Text>
-            </View>
-          )}
-          {user.Salary_Cap && (
-            <View style={styles.fieldRow}>
-              <Text style={styles.label}>Salary Cap:</Text>
-              <Text style={styles.value}>{user.Salary_Cap}</Text>
-            </View>
-          )}
-        </View>
-
-        <View style={styles.fieldGroup}>
-          <Text style={[styles.subtitle, { marginBottom: 8, fontWeight: 'bold' }]}>Education</Text>
-          <View style={styles.fieldRow}>
-            <Text style={styles.label}>Degree:</Text>
-            <Text style={styles.value}>{user.degree}</Text>
-          </View>
-          <View style={styles.fieldRow}>
-            <Text style={styles.label}>Institute:</Text>
-            <Text style={styles.value}>{user.institute}</Text>
-          </View>
-          <View style={styles.fieldRow}>
-            <Text style={styles.label}>Grade:</Text>
-            <Text style={styles.value}>{user.grade}</Text>
-          </View>
-          <View style={styles.fieldRow}>
-            <Text style={styles.label}>Year:</Text>
-            <Text style={styles.value}>{user.year}</Text>
-          </View>
-        </View>
-
-        {(user.teaching_subjects || user.teaching_institute || user.teaching_contact) && (
-          <View style={styles.fieldGroup}>
-            <Text style={[styles.subtitle, { marginBottom: 8, fontWeight: 'bold' }]}>Teaching Experience</Text>
-            {user.teaching_subjects && (
-              <View style={styles.fieldRow}>
-                <Text style={styles.label}>Subjects:</Text>
-                <Text style={styles.value}>{user.teaching_subjects}</Text>
-              </View>
-            )}
-            {user.teaching_institute && (
-              <View style={styles.fieldRow}>
-                <Text style={styles.label}>Institute:</Text>
-                <Text style={styles.value}>{user.teaching_institute}</Text>
-              </View>
-            )}
-            {user.teaching_contact && (
-              <View style={styles.fieldRow}>
-                <Text style={styles.label}>Contact:</Text>
-                <Text style={styles.value}>{user.teaching_contact}</Text>
-              </View>
-            )}
-          </View>
-        )}
-
-        {(user.position || user.organization || user.skills) && (
-          <View style={styles.fieldGroup}>
-            <Text style={[styles.subtitle, { marginBottom: 8, fontWeight: 'bold' }]}>Other Experience</Text>
-            {user.position && (
-              <View style={styles.fieldRow}>
-                <Text style={styles.label}>Position:</Text>
-                <Text style={styles.value}>{user.position}</Text>
-              </View>
-            )}
-            {user.organization && (
-              <View style={styles.fieldRow}>
-                <Text style={styles.label}>Organization:</Text>
-                <Text style={styles.value}>{user.organization}</Text>
-              </View>
-            )}
-            {user.skills && (
-              <View style={styles.fieldRow}>
-                <Text style={styles.label}>Skills:</Text>
-                <Text style={styles.value}>{formatSkills(user.skills)}</Text>
-              </View>
-            )}
-          </View>
-        )}
-
-        {user.description && (
-          <View style={styles.fieldGroup}>
-            <Text style={[styles.subtitle, { marginBottom: 8, fontWeight: 'bold' }]}>Description</Text>
-            <View style={styles.fieldRow}>
-              <Text style={styles.label}>Details:</Text>
-              <Text style={styles.value}>{user.description}</Text>
-            </View>
-          </View>
-        )}
-      </View>
-    </Page>
-  </Document>
-);
+import { PDFDownloadLink } from "@react-pdf/renderer";
+import UserPDF from "../Components/UserPDF";
 
 const AllRegisteredUsers = () => {
-  const { users, fetchUsers, deleteUser, updateUser, loading, error } = useUserStore();
+  const { users, fetchUsers, deleteUser, updateUser, loading, error } =
+    useUserStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [viewingUser, setViewingUser] = useState(null);
+  const [deleteMessage, setDeleteMessage] = useState(null); // State for delete popup
 
   useEffect(() => {
     fetchUsers();
@@ -350,54 +72,80 @@ const AllRegisteredUsers = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setEditingUser(prev => ({
+    setEditingUser((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setEditingUser(prev => ({
+      setEditingUser((prev) => ({
         ...prev,
         image: file,
       }));
     }
   };
 
-  const filteredUsers = users.filter((user) =>
-    user.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.employee_id.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const tableVariants = {
-    hidden: { opacity: 0 },
-    visible: { 
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
+  const handleDeleteClick = async (userId, userName) => {
+    if (window.confirm(`Are you sure you want to delete ${userName}?`)) {
+      setDeleteMessage(`Deleting ${userName}...`); // Show loading message
+      try {
+        // Simulate loading delay (e.g., 1.5 seconds)
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        await deleteUser(userId); // Perform the delete action
+        setDeleteMessage(`${userName} has been successfully deleted!`); // Success message
+        setTimeout(() => {
+          setDeleteMessage(null); // Hide message after 2 seconds
+          fetchUsers(); // Refresh the user list
+        }, 2000);
+      } catch (error) {
+        console.error("Error deleting user:", error);
+        setDeleteMessage("Failed to delete user.");
+        setTimeout(() => setDeleteMessage(null), 2000);
       }
     }
   };
 
+  const filteredUsers = users.filter(
+    (user) =>
+      user.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.employee_id.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const tableVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
   const rowVariants = {
     hidden: { opacity: 0, x: -20 },
-    visible: { opacity: 1, x: 0 }
+    visible: { opacity: 1, x: 0 },
   };
 
   const modalVariants = {
     hidden: { opacity: 0, scale: 0.95 },
     visible: { opacity: 1, scale: 1 },
-    exit: { opacity: 0, scale: 0.95 }
+    exit: { opacity: 0, scale: 0.95 },
   };
 
   return (
     <div className="container mx-auto p-6">
       <div className="mb-8">
-        <h2 className="text-3xl font-bold text-gray-800 mb-6">Registered Employees</h2>
+        <h2 className="text-3xl font-bold text-gray-800 mb-6">
+          Registered Employees
+        </h2>
         <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+          <Search
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+            size={20}
+          />
           <input
             type="text"
             placeholder="Search by name or ID..."
@@ -413,6 +161,26 @@ const AllRegisteredUsers = () => {
           {error}
         </div>
       )}
+
+      {/* Delete Popup Message */}
+      <AnimatePresence>
+        {deleteMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-4 right-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-lg shadow-lg z-50"
+          >
+            {deleteMessage.includes("Deleting") && (
+              <div className="flex items-center">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-green-500 mr-2"></div>
+                {deleteMessage}
+              </div>
+            )}
+            {!deleteMessage.includes("Deleting") && deleteMessage}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {loading ? (
         <div className="flex justify-center items-center h-64">
@@ -456,7 +224,9 @@ const AllRegisteredUsers = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <CreditCard className="h-5 w-5 text-gray-400 mr-2" />
-                        <span className="text-sm text-gray-900">{user.employee_id}</span>
+                        <span className="text-sm text-gray-900">
+                          {user.employee_id}
+                        </span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -478,7 +248,9 @@ const AllRegisteredUsers = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <Briefcase className="h-5 w-5 text-gray-400 mr-2" />
-                        <span className="text-sm text-gray-900">{user.post_applied_for}</span>
+                        <span className="text-sm text-gray-900">
+                          {user.post_applied_for}
+                        </span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -496,7 +268,7 @@ const AllRegisteredUsers = () => {
                           <Edit2 className="h-5 w-5" />
                         </button>
                         <button
-                          onClick={() => deleteUser(user.id)}
+                          onClick={() => handleDeleteClick(user.id, user.full_name)}
                           className="text-red-600 hover:text-red-900 cursor-pointer"
                         >
                           <Trash2 className="h-5 w-5" />
@@ -518,7 +290,7 @@ const AllRegisteredUsers = () => {
         Back to Registration
       </Link>
 
-      {/* View Modal with new fields */}
+      {/* View Modal */}
       <AnimatePresence>
         {isViewModalOpen && viewingUser && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -530,7 +302,9 @@ const AllRegisteredUsers = () => {
               className="bg-white rounded-lg shadow-xl w-full max-w-4xl mx-4 overflow-y-auto max-h-[90vh]"
             >
               <div className="flex justify-between items-center p-6 border-b">
-                <h3 className="text-2xl font-semibold text-gray-800">Employee Details</h3>
+                <h3 className="text-2xl font-semibold text-gray-800">
+                  Employee Details
+                </h3>
                 <div className="flex items-center space-x-4">
                   <PDFDownloadLink
                     document={<UserPDF user={viewingUser} />}
@@ -567,7 +341,9 @@ const AllRegisteredUsers = () => {
                       </div>
                     )}
                     <div>
-                      <h4 className="text-xl font-semibold text-gray-800">{viewingUser.full_name}</h4>
+                      <h4 className="text-xl font-semibold text-gray-800">
+                        {viewingUser.full_name}
+                      </h4>
                       <p className="text-gray-600 flex items-center mt-1">
                         <Briefcase className="h-4 w-4 mr-2" />
                         {viewingUser.post_applied_for}
@@ -611,7 +387,6 @@ const AllRegisteredUsers = () => {
                         <p className="font-medium">{viewingUser.contact_number}</p>
                       </div>
                     </div>
-                    {/* Added: Guardian Phone */}
                     <div className="flex items-center space-x-3">
                       <Contact className="h-5 w-5 text-gray-400" />
                       <div>
@@ -644,21 +419,27 @@ const AllRegisteredUsers = () => {
                       <Calendar className="h-5 w-5 text-gray-400" />
                       <div>
                         <p className="text-sm text-gray-500">Date of Birth</p>
-                        <p className="font-medium">{new Date(viewingUser.dob).toLocaleDateString()}</p>
+                        <p className="font-medium">
+                          {new Date(viewingUser.dob).toLocaleDateString()}
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-3">
                       <Calendar className="h-5 w-5 text-gray-400" />
                       <div>
                         <p className="text-sm text-gray-500">Registration Date</p>
-                        <p className="font-medium">{new Date(viewingUser.registration_date).toLocaleDateString()}</p>
+                        <p className="font-medium">
+                          {new Date(viewingUser.registration_date).toLocaleDateString()}
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-3">
                       <Calendar className="h-5 w-5 text-gray-400" />
                       <div>
                         <p className="text-sm text-gray-500">Joining Date</p>
-                        <p className="font-medium">{new Date(viewingUser.joining_date).toLocaleDateString()}</p>
+                        <p className="font-medium">
+                          {new Date(viewingUser.joining_date).toLocaleDateString()}
+                        </p>
                       </div>
                     </div>
                     {viewingUser.Salary_Cap && (
@@ -684,7 +465,6 @@ const AllRegisteredUsers = () => {
                         <p className="font-medium">{viewingUser.institute}</p>
                       </div>
                     </div>
-                    {/* Added: Has Disease */}
                     <div className="flex items-center space-x-3">
                       <Heart className="h-5 w-5 text-gray-400" />
                       <div>
@@ -752,7 +532,9 @@ const AllRegisteredUsers = () => {
                         <Users className="h-5 w-5 text-gray-400 mt-1" />
                         <div>
                           <p className="text-sm text-gray-500">Skills</p>
-                          <p className="font-medium">{formatSkills(viewingUser.skills)}</p>
+                          <p className="font-medium">
+                            {viewingUser.skills.join(", ")}
+                          </p>
                         </div>
                       </div>
                     )}
@@ -765,7 +547,6 @@ const AllRegisteredUsers = () => {
                         </div>
                       </div>
                     )}
-                    {/* Added: Reference Name */}
                     {viewingUser.reference_name && (
                       <div className="flex items-start space-x-3">
                         <UserPlus className="h-5 w-5 text-gray-400 mt-1" />
@@ -775,7 +556,6 @@ const AllRegisteredUsers = () => {
                         </div>
                       </div>
                     )}
-                    {/* Added: Reference Contact */}
                     {viewingUser.reference_contact && (
                       <div className="flex items-start space-x-3">
                         <PhoneCall className="h-5 w-5 text-gray-400 mt-1" />
@@ -785,7 +565,6 @@ const AllRegisteredUsers = () => {
                         </div>
                       </div>
                     )}
-                    {/* Added: Disease Description */}
                     {viewingUser.disease_description && (
                       <div className="flex items-start space-x-3">
                         <Heart className="h-5 w-5 text-gray-400 mt-1" />
@@ -803,7 +582,7 @@ const AllRegisteredUsers = () => {
         )}
       </AnimatePresence>
 
-      {/* Edit Modal with new fields */}
+      {/* Edit Modal */}
       <AnimatePresence>
         {isEditModalOpen && editingUser && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -923,7 +702,6 @@ const AllRegisteredUsers = () => {
                       className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
-                  {/* Added: Guardian Phone */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Guardian Phone
@@ -1050,7 +828,6 @@ const AllRegisteredUsers = () => {
                       className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
-                  {/* Added: Reference Name */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Reference Name
@@ -1063,7 +840,6 @@ const AllRegisteredUsers = () => {
                       className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
-                  {/* Added: Reference Contact */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Reference Contact
@@ -1076,7 +852,6 @@ const AllRegisteredUsers = () => {
                       className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
-                  {/* Added: Has Disease */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Has Disease
@@ -1091,7 +866,6 @@ const AllRegisteredUsers = () => {
                       <option value="No">No</option>
                     </select>
                   </div>
-                  {/* Added: Disease Description */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Disease Description

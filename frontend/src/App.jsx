@@ -9,15 +9,14 @@ import AllRegisteredUsers from "./Pages/Allusers";
 import UserList from "./Pages/UserList";
 import AuthPage from "./Pages/authPage";
 import ProfilePage from "./Pages/ProfilePage";
+import ExEmployeePage from "./Pages/exEmployeePage";
 import { useAuthStore } from "./Store/authStore";
 
-// Layout component to handle conditional rendering of Navbar and Footer
 const Layout = ({ children }) => {
   const location = useLocation();
   const { user } = useAuthStore();
   const isAuthPage = location.pathname === "/";
 
-  // Show Navbar and Footer only if not on AuthPage and user is logged in
   return (
     <>
       {!isAuthPage && user && <Navbar />}
@@ -27,12 +26,11 @@ const Layout = ({ children }) => {
   );
 };
 
-// Protected Route component for specific roles
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, role } = useAuthStore();
 
   if (!user) {
-    return <AuthPage />; // Redirect to AuthPage if not logged in
+    return <AuthPage />;
   }
 
   if (allowedRoles && !allowedRoles.includes(role)) {
@@ -49,56 +47,51 @@ const App = () => {
     <Router>
       <Layout>
         <Routes>
-          {/* If user is not logged in, show only AuthPage */}
           {!user && <Route path="/" element={<AuthPage />} />}
           {!user && <Route path="*" element={<AuthPage />} />}
 
-          {/* If user is logged in */}
           {user && (
             <>
-              {/* Common route for all roles */}
               <Route path="/view" element={<ViewDataPage />} />
 
-              {/* Employee routes */}
               {role?.toLowerCase() === "employee" && (
                 <>
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/" element={<AuthPage />} />
-                  <Route path="*" element={<ProfilePage />} /> {/* Redirect all other paths to Profile */}
+                  <Route path="*" element={<ProfilePage />} />
                 </>
               )}
 
-              {/* Employer or HR routes */}
-              {(role?.toLowerCase() === "employer" || role?.toLowerCase() === "hr") && (
+              {(role?.toLowerCase() === "hr") && (
                 <>
                   <Route
                     path="/uploadfile"
-                    element={<ProtectedRoute allowedRoles={["employer", "HR", "hr"]}><UploadPage /></ProtectedRoute>}
+                    element={<ProtectedRoute allowedRoles={["hr"]}><UploadPage /></ProtectedRoute>}
                   />
                   <Route
                     path="/register"
-                    element={<ProtectedRoute allowedRoles={["employer", "HR", "hr"]}><RegisterUser /></ProtectedRoute>}
+                    element={<ProtectedRoute allowedRoles={["hr"]}><RegisterUser /></ProtectedRoute>}
                   />
                   <Route
                     path="/users"
-                    element={<ProtectedRoute allowedRoles={["employer", "HR", "hr"]}><AllRegisteredUsers /></ProtectedRoute>}
+                    element={<ProtectedRoute allowedRoles={["hr"]}><AllRegisteredUsers /></ProtectedRoute>}
                   />
                   <Route
                     path="/registerusers"
-                    element={<ProtectedRoute allowedRoles={["employer", "HR", "hr"]}><UserList /></ProtectedRoute>}
+                    element={<ProtectedRoute allowedRoles={["hr"]}><UserList /></ProtectedRoute>}
                   />
-                  <Route path="/" element={<AuthPage />} /> {/* Default route */}
-                  <Route path="*" element={<AuthPage />} /> {/* Fallback route */}
+                  <Route path="/" element={<AuthPage />} />
+                  <Route path="*" element={<AuthPage />} />
                 </>
               )}
 
-              {/* Fallback for other roles (if any) */}
-              {role?.toLowerCase() !== "employee" && role?.toLowerCase() !== "employer" && role?.toLowerCase() !== "hr" && (
+              {role?.toLowerCase() === "superadmin" && (
                 <>
                   <Route path="/uploadfile" element={<UploadPage />} />
                   <Route path="/register" element={<RegisterUser />} />
                   <Route path="/users" element={<AllRegisteredUsers />} />
                   <Route path="/registerusers" element={<UserList />} />
+                  <Route path="/ex-employees" element={<ExEmployeePage />} /> {/* Only Super Admin */}
                   <Route path="/" element={<ProfilePage />} />
                   <Route path="*" element={<ProfilePage />} />
                 </>

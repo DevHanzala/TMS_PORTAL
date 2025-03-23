@@ -1,8 +1,8 @@
 import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import logo from "../assets/TMS-LOGO.webp"; // Ensure the logo exists in the assets folder
-import { useAuthStore } from "../Store/authStore"; // Adjust the path to your authStore
+import logo from "../assets/TMS-LOGO.webp";
+import { useAuthStore } from "../Store/authStore";
 
 const Navbar = () => {
   const { user, role, logout } = useAuthStore();
@@ -14,16 +14,25 @@ const Navbar = () => {
 
     if (userRole === "employee") {
       return [
-        { path: "/view", label: "Attendance" }, // Attendance button for employees
-        { path: "/profile", label: "Profile" },  // Profile button for employees
+        { path: "/view", label: "Attendance" },
+        { path: "/profile", label: "Profile" },
       ];
-    } else if (userRole === "employer" || userRole === "hr") {
+    } else if (userRole === "hr") {
       return [
         { path: "/uploadfile", label: "Upload" },
         { path: "/view", label: "Attendance" },
         { path: "/register", label: "Registration" },
         { path: "/users", label: "Staff" },
         { path: "/registerusers", label: "Payrolls" },
+      ];
+    } else if (userRole === "superadmin") {
+      return [
+        { path: "/uploadfile", label: "Upload" },
+        { path: "/view", label: "Attendance" },
+        { path: "/register", label: "Registration" },
+        { path: "/users", label: "Staff" },
+        { path: "/registerusers", label: "Payrolls" },
+        { path: "/ex-employees", label: "Ex-Employees" }, // Only for Super Admin
       ];
     }
     return [];
@@ -68,7 +77,9 @@ const Navbar = () => {
                     to={link.path}
                     className={({ isActive }) =>
                       `px-4 py-2 rounded-lg transition ${
-                        isActive ? "bg-[oklch(0.67_0.19_42.13)]" : "bg-gray-500 hover:bg-gray-700"
+                        isActive
+                          ? "bg-[oklch(0.67_0.19_42.13)]"
+                          : "bg-gray-500 hover:bg-gray-700"
                       } text-white`
                     }
                   >

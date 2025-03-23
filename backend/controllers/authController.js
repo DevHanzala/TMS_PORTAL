@@ -1,7 +1,7 @@
 import { sequelize } from "../DB/DBconnection.js";
 import { QueryTypes } from "sequelize";
+import HrUser from "../models/hrUsers.js";
 
-// Controller for handling authentication logic
 export const authController = {
   login: async (req, res) => {
     const { stakeholder, email, cnic, password } = req.body;
@@ -28,7 +28,6 @@ export const authController = {
         const user = users[0];
         console.log('Raw user data from DB:', user);
 
-        // Convert bytea image to Base64 if it exists
         let imageBase64 = null;
         if (user.image) {
           imageBase64 = Buffer.from(user.image).toString('base64');
@@ -65,26 +64,40 @@ export const authController = {
             Salary_Cap: user.Salary_Cap,
             role: 'employee',
             image: imageBase64 ? `data:image/jpeg;base64,${imageBase64}` : null,
-            guardian_phone: user.guardian_phone,         // Added
-            reference_name: user.reference_name,         // Added
-            reference_contact: user.reference_contact,   // Added
-            has_disease: user.has_disease,               // Added
-            disease_description: user.disease_description // Added
+            guardian_phone: user.guardian_phone,
+            reference_name: user.reference_name,
+            reference_contact: user.reference_contact,
+            has_disease: user.has_disease,
+            disease_description: user.disease_description,
           },
         });
       } else if (stakeholder === 'hr') {
-        if (!password) {
-          return res.status(400).json({ message: 'Password is required for HR login' });
+        if (!email || !password) {
+          return res.status(400).json({ message: 'Email and password are required for HR login' });
         }
 
-        const hrPassword = 'tmsportal123';
-        if (password !== hrPassword) {
-          return res.status(401).json({ message: 'Invalid HR password' });
+        const hr = await HrUser.findOne({ where: { email, password } });
+        if (!hr) {
+          return res.status(401).json({ message: 'Invalid HR email or password' });
         }
 
         return res.status(200).json({
           message: 'HR login successful',
-          user: { role: 'hr' },
+          user: { role: 'hr', email },
+        });
+      } else if (stakeholder === 'superadmin') {
+        if (!password) {
+          return res.status(400).json({ message: 'Password is required for Super Admin login' });
+        }
+
+        const superAdminPassword = 'tmsportal123';
+        if (password !== superAdminPassword) {
+          return res.status(401).json({ message: 'Invalid Super Admin password' });
+        }
+
+        return res.status(200).json({
+          message: 'Super Admin login successful',
+          user: { role: 'superadmin' },
         });
       } else {
         return res.status(400).json({ message: 'Invalid stakeholder type' });
@@ -92,6 +105,56 @@ export const authController = {
     } catch (error) {
       console.error('Login error:', error);
       return res.status(500).json({ message: 'Internal server error' });
+    }
+  },
+
+  createHr: async (req, res) => {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
+
+    try {
+      const existingHr = await HrUser.findOne({ where: { email } });
+      if (existingHr) {
+        return res.status(400).json({ message: 'HR email already exists' });
+      }
+
+      await HrUser.create({ email, password });
+      return res.status(200).json({ message: 'HR/Employer created successfully' });
+    } catch (error) {
+      console.error('Create HR error:', error);
+      return res.status(500).json({ message: 'Failed to create HR/Employer' });
+    }
+  },
+
+  deleteHr: async (req, res) => {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    try {
+      const hr = await HrUser.findOne({ where: { email } });
+      if (!hr) {
+        return res.status(404).json({ message: 'HR/Employer not found' });
+      }
+
+      await hr.destroy();
+      return res.status(200).json({ message: 'HR/Employer deleted successfully' });
+    } catch (error) {
+      console.error('Delete HR error:', error);
+      return res.status(500).json({ message: 'Failed to delete HR/Employer' });
+    }
+  },
+
+  getHrList: async (req, res) => {
+    try {
+      const hrList = await HrUser.findAll({ attributes: ['email'] });
+      return res.status(200).json({ hrList: hrList.map(hr => ({ email: hr.email })) });
+    } catch (error) {
+      console.error('Get HR list error:', error);
+      return res.status(500).json({ message: 'Failed to fetch HR list' });
     }
   },
 
@@ -114,7 +177,6 @@ export const authController = {
       const user = users[0];
       console.log('Raw user data from DB (profile):', user);
 
-      // Convert bytea image to Base64 if it exists
       let imageBase64 = null;
       if (user.image) {
         imageBase64 = Buffer.from(user.image).toString('base64');
@@ -150,11 +212,11 @@ export const authController = {
           Salary_Cap: user.Salary_Cap,
           role: 'employee',
           image: imageBase64 ? `data:image/jpeg;base64,${imageBase64}` : null,
-          guardian_phone: user.guardian_phone,         // Added
-          reference_name: user.reference_name,         // Added
-          reference_contact: user.reference_contact,   // Added
-          has_disease: user.has_disease,               // Added
-          disease_description: user.disease_description // Added
+          guardian_phone: user.guardian_phone,
+          reference_name: user.reference_name,
+          reference_contact: user.reference_contact,
+          has_disease: user.has_disease,
+          disease_description: user.disease_description,
         },
       });
     } catch (error) {

@@ -5,7 +5,8 @@ import { useUserStore } from "../Store/userStore";
 import { Link } from "react-router-dom";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { FaUser, FaCalendar, FaClock, FaMoneyBillWave, FaTrash, FaEye } from "react-icons/fa";
+import { FaUser, FaCalendar, FaClock, FaMoneyBillWave, FaTrash, FaEye, FaLeaf, FaHourglass } from "react-icons/fa";
+import logo from "../assets/TMS-LOGO.webp"; // Adjust path based on your project structure
 
 export let exportedId = null;
 
@@ -26,10 +27,10 @@ const UserList = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [generatedPayrolls, setGeneratedPayrolls] = useState({});
   const [payrollSettings, setPayrollSettings] = useState({
-    selectedMonth: null, // Now a Date object
+    selectedMonth: null,
     saturdayOffEmployees: [],
     officialLeaves: "",
-    allowedHoursPerDay: {},
+    allowedHoursPerDay: 8,
   });
 
   useEffect(() => {
@@ -89,7 +90,7 @@ const UserList = () => {
 
     sectionData.forEach((row) => {
       const date = row[0]?.trim();
-      const dayOfWeek = row[1]?.trim(); // Assuming day of week is in column 1 (e.g., "Sat.")
+      const dayOfWeek = row[1]?.trim();
       const inTime = row[4]?.trim();
       const outTime = row[6]?.trim();
 
@@ -97,12 +98,10 @@ const UserList = () => {
         const isSunday = dayOfWeek === "Sun.";
         const isSaturday = dayOfWeek === "Sat.";
 
-        // Skip Sundays (off for all) and Saturdays (off for "Saturday Off" employees)
         if (isSunday || (isSaturday && payrollSettings.saturdayOffEmployees.includes(employeeId))) {
-          return; // Do not count as absent or process further
+          return;
         }
 
-        // Process weekdays and Saturdays (for non-"Saturday Off" employees) for absences, lates, and earlies
         if (
           (!inTime || inTime === "0:00" || inTime === "") &&
           (!outTime || outTime === "0:00" || outTime === "")
@@ -132,7 +131,7 @@ const UserList = () => {
   const calculateWorkingDays = (month, saturdayOff = false) => {
     if (!month) return 0;
     const year = month.getFullYear();
-    const monthNum = month.getMonth(); // 0-based
+    const monthNum = month.getMonth();
     const date = new Date(year, monthNum, 1);
     const lastDay = new Date(year, monthNum + 1, 0).getDate();
     let workingDays = 0;
@@ -142,7 +141,6 @@ const UserList = () => {
       const isSunday = date.getDay() === 0;
       const isSaturday = date.getDay() === 6;
 
-      // Sundays are off for everyone, Saturdays are off only for "Saturday Off" employees
       if (isSunday || (saturdayOff && isSaturday)) continue;
       workingDays++;
     }
@@ -223,7 +221,7 @@ const UserList = () => {
       const isSaturdayOff = payrollSettings.saturdayOffEmployees.includes(user.employee_id);
       const workingDays = calculateWorkingDays(payrollSettings.selectedMonth, isSaturdayOff);
       const officialLeaves = parseInt(payrollSettings.officialLeaves || 0);
-      const allowedHoursPerDay = parseFloat(payrollSettings.allowedHoursPerDay[user.employee_id] || 8);
+      const allowedHoursPerDay = parseFloat(payrollSettings.allowedHoursPerDay);
       const allowedTotalHours = allowedHoursPerDay * workingDays;
 
       let totalHoursDecimal = convertToDecimalHours(totalWorkingHours);
@@ -231,8 +229,8 @@ const UserList = () => {
       totalHoursDecimal = Math.min(totalHoursDecimal, allowedTotalHours);
 
       const salaryCap = parseFloat(user.Salary_Cap);
-      const hourlyWage = salaryCap / (workingDays * allowedHoursPerDay) / 2; // 50% of salary cap for hourly wage
-      const dailyAllowanceRate = salaryCap / workingDays / 2; // 50% of salary cap for daily allowance
+      const hourlyWage = salaryCap / (workingDays * allowedHoursPerDay) / 2;
+      const dailyAllowanceRate = salaryCap / workingDays / 2;
 
       const allowedAbsences = 2;
       const allowedLates = 3;
@@ -274,8 +272,6 @@ const UserList = () => {
       };
 
       payrolls[user.employee_id] = payrollOutput;
-
-      console.log(`Payroll for ${user.full_name} (${user.employee_id}):`, payrollOutput);
     });
 
     if (issues.length > 0) {
@@ -298,9 +294,14 @@ const UserList = () => {
     exit: { opacity: 0, scale: 0.95 },
   };
 
-  const receiptVariants = {
-    hidden: { opacity: 0, y: -20 },
-    visible: { opacity: 1, y: 0 },
+  const inputVariants = {
+    hidden: { opacity: 0, x: -20 },
+    visible: { opacity: 1, x: 0 },
+  };
+
+  const buttonVariants = {
+    hover: { scale: 1.05 },
+    tap: { scale: 0.95 },
   };
 
   const employeeIds = users.map((user) => user.employee_id);
@@ -324,12 +325,15 @@ const UserList = () => {
                   <span onClick={() => handleFileClick(file)} className="cursor-pointer">
                     📄 {file.filename}
                   </span>
-                  <button
-                    className="bg-orange-500 text-white px-3 py-1 rounded text-sm hover:bg-orange-600"
+                  <motion.button
+                    variants={buttonVariants}
+                    whileHover="hover"
+                    whileTap="tap"
+                    className="bg-orange-500 text-white px-3 py-1 rounded text-sm"
                     onClick={() => deleteFile(file.id)}
                   >
                     Delete
-                  </button>
+                  </motion.button>
                 </li>
               ))
             )}
@@ -484,16 +488,22 @@ const UserList = () => {
                     <td className="px-2 py-2 whitespace-nowrap text-xs flex gap-2">
                       {generatedPayrolls[user.employee_id] && (
                         <>
-                          <button
+                          <motion.button
+                            variants={buttonVariants}
+                            whileHover="hover"
+                            whileTap="tap"
                             onClick={() => {
                               setSelectedUser(user);
                               setIsShowPayrollOpen(true);
                             }}
-                            className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 flex items-center gap-1"
+                            className="bg-blue-500 text-white px-2 py-1 rounded flex items-center gap-1"
                           >
                             <FaEye /> Show
-                          </button>
-                          <button
+                          </motion.button>
+                          <motion.button
+                            variants={buttonVariants}
+                            whileHover="hover"
+                            whileTap="tap"
                             onClick={() => {
                               setGeneratedPayrolls((prev) => {
                                 const updated = { ...prev };
@@ -501,10 +511,10 @@ const UserList = () => {
                                 return updated;
                               });
                             }}
-                            className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 flex items-center gap-1"
+                            className="bg-red-500 text-white px-2 py-1 rounded flex items-center gap-1"
                           >
                             <FaTrash /> Delete
-                          </button>
+                          </motion.button>
                         </>
                       )}
                     </td>
@@ -529,57 +539,76 @@ const UserList = () => {
           >
             Back
           </Link>
-          <button
+          <motion.button
+            variants={buttonVariants}
+            whileHover="hover"
+            whileTap="tap"
             onClick={() => setIsPayrollModalOpen(true)}
-            className="inline-block px-4 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors cursor-pointer text-sm"
+            className="inline-block px-4 py-1 bg-green-500 text-white rounded-lg text-sm"
           >
             Payroll Generation
-          </button>
+          </motion.button>
         </div>
       </div>
 
       {/* Payroll Generation Modal */}
       <AnimatePresence>
         {isPayrollModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 px-4">
             <motion.div
               variants={modalVariants}
               initial="hidden"
               animate="visible"
-              exit="hidden"
-              className="bg-white rounded-lg shadow-xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto"
+              exit="exit"
+              className="bg-gradient-to-br from-white to-gray-100 rounded-xl shadow-2xl w-full max-w-2xl p-8 max-h-[90vh] overflow-y-auto border-t-4 border-green-500"
             >
-              <div className="flex justify-between items-center mb-6 sticky top-0 bg-white z-10">
-                <h3 className="text-xl font-semibold text-gray-800">Generate Payrolls</h3>
-                <button
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="flex justify-between items-center mb-6 sticky top-0 bg-white z-10 rounded-t-xl p-2"
+              >
+                <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                  <FaMoneyBillWave className="text-green-500" /> Generate Payrolls
+                </h3>
+                <motion.button
+                  variants={buttonVariants}
+                  whileHover="hover"
+                  whileTap="tap"
                   onClick={() => setIsPayrollModalOpen(false)}
                   className="text-gray-500 hover:text-gray-700 text-xl"
                 >
                   ✕
-                </button>
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Select Month</label>
+                </motion.button>
+              </motion.div>
+              <div className="space-y-6">
+                <motion.div variants={inputVariants} initial="hidden" animate="visible" transition={{ delay: 0.2 }}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                    <FaCalendar className="text-blue-500" /> Select Month
+                  </label>
                   <DatePicker
                     selected={payrollSettings.selectedMonth}
                     onChange={(date) => setPayrollSettings((prev) => ({ ...prev, selectedMonth: date }))}
                     dateFormat="MMMM yyyy"
                     showMonthYearPicker
-                    className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 shadow-sm"
                     placeholderText="Pick a month"
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Working Days</label>
-                  <p className="text-sm text-gray-600">
+                </motion.div>
+                <motion.div variants={inputVariants} initial="hidden" animate="visible" transition={{ delay: 0.3 }}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                    <FaClock className="text-purple-500" /> Working Days
+                  </label>
+                  <p className="text-sm text-gray-600 p-2 bg-gray-50 rounded-lg">
                     {payrollSettings.selectedMonth
                       ? `Regular: ${calculateWorkingDays(payrollSettings.selectedMonth, false)}, Saturday Off: ${calculateWorkingDays(payrollSettings.selectedMonth, true)}`
                       : "Select a month to see working days"}
                   </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Saturday Off Employees</label>
+                </motion.div>
+                <motion.div variants={inputVariants} initial="hidden" animate="visible" transition={{ delay: 0.4 }}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                    <FaUser className="text-orange-500" /> Saturday Off Employees
+                  </label>
                   <select
                     multiple
                     value={payrollSettings.saturdayOffEmployees}
@@ -589,7 +618,7 @@ const UserList = () => {
                         saturdayOffEmployees: Array.from(e.target.selectedOptions, (option) => option.value),
                       }))
                     }
-                    className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 h-32"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 h-32 shadow-sm"
                   >
                     {users.map((user) => (
                       <option key={user.employee_id} value={user.employee_id}>
@@ -598,57 +627,66 @@ const UserList = () => {
                     ))}
                   </select>
                   <p className="text-xs text-gray-500 mt-1">Hold Ctrl (Windows) or Cmd (Mac) to select multiple</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Official Leaves (Excluding Sundays)</label>
+                </motion.div>
+                <motion.div variants={inputVariants} initial="hidden" animate="visible" transition={{ delay: 0.5 }}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                    <FaLeaf className="text-green-500" /> Official Leaves (Excluding Sundays)
+                  </label>
                   <input
                     type="number"
                     value={payrollSettings.officialLeaves}
                     onChange={(e) =>
                       setPayrollSettings((prev) => ({ ...prev, officialLeaves: e.target.value }))
                     }
-                    className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 shadow-sm"
                     placeholder="Enter number of official leaves"
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Allowed Working Hours Per Day</label>
-                  {users.map((user) => (
-                    <div key={user.employee_id} className="flex items-center gap-2 mb-2">
-                      <span className="text-sm">{user.full_name} ({user.employee_id}):</span>
-                      <input
-                        type="number"
-                        value={payrollSettings.allowedHoursPerDay[user.employee_id] || ""}
-                        onChange={(e) =>
-                          setPayrollSettings((prev) => ({
-                            ...prev,
-                            allowedHoursPerDay: {
-                              ...prev.allowedHoursPerDay,
-                              [user.employee_id]: e.target.value,
-                            },
-                          }))
-                        }
-                        className="w-20 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                        placeholder="e.g., 8"
-                      />
-                    </div>
-                  ))}
-                </div>
+                </motion.div>
+                <motion.div variants={inputVariants} initial="hidden" animate="visible" transition={{ delay: 0.6 }}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                    <FaHourglass className="text-indigo-500" /> Allowed Working Hours Per Day
+                  </label>
+                  <input
+                    type="number"
+                    value={payrollSettings.allowedHoursPerDay}
+                    onChange={(e) =>
+                      setPayrollSettings((prev) => ({
+                        ...prev,
+                        allowedHoursPerDay: e.target.value,
+                      }))
+                    }
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                    placeholder="Default: 8"
+                    min="1"
+                    max="24"
+                  />
+                </motion.div>
               </div>
-              <div className="mt-6 flex justify-end space-x-4">
-                <button
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.7 }}
+                className="mt-8 flex justify-end space-x-4"
+              >
+                <motion.button
+                  variants={buttonVariants}
+                  whileHover="hover"
+                  whileTap="tap"
                   onClick={() => setIsPayrollModalOpen(false)}
-                  className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
+                  className="px-6 py-2 bg-gray-600 text-white rounded-lg shadow-md"
                 >
                   Cancel
-                </button>
-                <button
+                </motion.button>
+                <motion.button
+                  variants={buttonVariants}
+                  whileHover="hover"
+                  whileTap="tap"
                   onClick={handleGenerateAllPayrolls}
-                  className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                  className="px-6 py-2 bg-green-500 text-white rounded-lg shadow-md flex items-center gap-2"
                 >
-                  Generate All Payrolls
-                </button>
-              </div>
+                  <FaMoneyBillWave /> Generate All Payrolls
+                </motion.button>
+              </motion.div>
             </motion.div>
           </div>
         )}
@@ -657,163 +695,190 @@ const UserList = () => {
       {/* Show Payroll Receipt */}
       <AnimatePresence>
         {isShowPayrollOpen && selectedUser && generatedPayrolls[selectedUser.employee_id] && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 px-4">
             <motion.div
-              variants={receiptVariants}
+              variants={modalVariants}
               initial="hidden"
               animate="visible"
-              exit="hidden"
-              className="bg-white rounded-lg shadow-lg w-full max-w-md p-4 border-t-4 border-blue-500 max-h-[80vh] overflow-y-auto"
+              exit="exit"
+              className="bg-white rounded-xl shadow-2xl w-full max-w-5xl p-8 max-h-[90vh] overflow-y-auto border-t-4 border-blue-600"
             >
-              <div className="text-center mb-3 sticky top-0 bg-white z-10 pb-2">
-                <h3 className="text-lg font-bold text-gray-800">Techmire Solution</h3>
-                <h4 className="text-sm font-semibold text-gray-700">Payroll Receipt</h4>
-                <p className="text-xs text-gray-500">
+              {/* Header with Logo */}
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="flex justify-between items-center mb-6 border-b pb-4"
+              >
+                <div className="flex items-center gap-3">
+                  <img src={logo} alt="Techmire Solution Logo" className="h-16 w-auto" />
+                  <div>
+                    <h3 className="text-2xl font-bold text-gray-800">Techmire Solution</h3>
+                    <h4 className="text-md font-semibold text-gray-600">Payroll Receipt</h4>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-500">
                   Generated on {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}
                 </p>
-              </div>
-              <div className="border-t border-b border-dashed py-3 space-y-3 text-xs">
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="flex items-center gap-1">
-                    <FaUser className="text-orange-500" />
-                    <span className="font-semibold">Employee ID:</span>
-                  </div>
-                  <span>{generatedPayrolls[selectedUser.employee_id].employee_id}</span>
+              </motion.div>
 
-                  <div className="flex items-center gap-1">
-                    <FaUser className="text-orange-500" />
-                    <span className="font-semibold">Name:</span>
+              {/* Employee Details Section */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="mb-6"
+              >
+                <h5 className="text-lg font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <FaUser className="text-blue-500" /> Employee Details
+                </h5>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg shadow-sm">
+                  <div>
+                    <span className="font-semibold text-gray-700">Employee ID:</span>{" "}
+                    {generatedPayrolls[selectedUser.employee_id].employee_id}
                   </div>
-                  <span>{generatedPayrolls[selectedUser.employee_id].full_name}</span>
-
-                  <div className="flex items-center gap-1">
-                    <FaCalendar className="text-orange-500" />
-                    <span className="font-semibold">Month:</span>
+                  <div>
+                    <span className="font-semibold text-gray-700">Name:</span>{" "}
+                    {generatedPayrolls[selectedUser.employee_id].full_name}
                   </div>
-                  <span>{generatedPayrolls[selectedUser.employee_id].month}</span>
-
-                  <div className="flex items-center gap-1">
-                    <FaClock className="text-orange-500" />
-                    <span className="font-semibold">Total Working Hours:</span>
+                  <div>
+                    <span className="font-semibold text-gray-700">Month:</span>{" "}
+                    {generatedPayrolls[selectedUser.employee_id].month}
                   </div>
-                  <span>{generatedPayrolls[selectedUser.employee_id].total_working_hours}</span>
-
-                  <div className="flex items-center gap-1">
-                    <FaClock className="text-orange-500" />
-                    <span className="font-semibold">Not Allowed Hours:</span>
-                  </div>
-                  <span>{generatedPayrolls[selectedUser.employee_id].not_allowed_hours}</span>
-
-                  <div className="flex items-center gap-1">
-                    <FaClock className="text-orange-500" />
-                    <span className="font-semibold">No. of Lates:</span>
-                  </div>
-                  <span>{generatedPayrolls[selectedUser.employee_id].late_count}</span>
-
-                  <div className="flex items-center gap-1">
-                    <FaClock className="text-orange-500" />
-                    <span className="font-semibold">No. of Absents:</span>
-                  </div>
-                  <span>{generatedPayrolls[selectedUser.employee_id].absent_count}</span>
-
-                  <div className="flex items-center gap-1">
-                    <FaMoneyBillWave className="text-orange-500" />
-                    <span className="font-semibold">Salary Cap:</span>
-                  </div>
-                  <span>{generatedPayrolls[selectedUser.employee_id].Salary_Cap}</span>
-
-                  <div className="flex items-center gap-1">
-                    <FaMoneyBillWave className="text-orange-500" />
-                    <span className="font-semibold">Gross Salary:</span>
-                  </div>
-                  <span>{generatedPayrolls[selectedUser.employee_id].gross_salary}</span>
-
-                  <div className="flex items-center gap-1">
-                    <FaCalendar className="text-orange-500" />
-                    <span className="font-semibold">Official Leaves:</span>
-                  </div>
-                  <span>{generatedPayrolls[selectedUser.employee_id].official_leaves}</span>
-
-                  <div className="flex items-center gap-1">
-                    <FaMoneyBillWave className="text-orange-500" />
-                    <span className="font-semibold">Daily Allowance:</span>
-                  </div>
-                  <span>{generatedPayrolls[selectedUser.employee_id].daily_allowance_rate}/day</span>
-
-                  <div className="flex items-center gap-1">
-                    <FaMoneyBillWave className="text-orange-500" />
-                    <span className="font-semibold">Hourly Wage:</span>
-                  </div>
-                  <span>{generatedPayrolls[selectedUser.employee_id].hourly_wage}/hr</span>
                 </div>
+              </motion.div>
 
-                <div className="mt-3">
-                  <div className="flex items-center gap-1 font-semibold mb-1">
-                    <FaCalendar className="text-orange-500" />
-                    Late Dates:
+              {/* Payroll Summary Section */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="mb-6"
+              >
+                <h5 className="text-lg font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <FaMoneyBillWave className="text-green-500" /> Payroll Summary
+                </h5>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg shadow-sm">
+                  <div>
+                    <span className="font-semibold text-gray-700">Total Working Hours:</span>{" "}
+                    {generatedPayrolls[selectedUser.employee_id].total_working_hours} hrs
                   </div>
-                  {generatedPayrolls[selectedUser.employee_id].late_dates.length > 0 ? (
-                    <div className="border rounded p-2 bg-gray-50">
-                      <table className="w-full text-[9px]">
-                        <thead>
-                          <tr className="bg-orange-500">
-                            <th className="p-1 text-left">#</th>
-                            <th className="p-1 text-left">Date</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {generatedPayrolls[selectedUser.employee_id].late_dates.map((date, index) => (
-                            <tr key={index} className="border-b">
-                              <td className="p-1">{index + 1}</td>
-                              <td className="p-1">{date}</td>
+                  <div>
+                    <span className="font-semibold text-gray-700">Not Allowed Hours:</span>{" "}
+                    {generatedPayrolls[selectedUser.employee_id].not_allowed_hours} hrs
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-700">No. of Lates:</span>{" "}
+                    {generatedPayrolls[selectedUser.employee_id].late_count}
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-700">No. of Absents:</span>{" "}
+                    {generatedPayrolls[selectedUser.employee_id].absent_count}
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-700">Salary Cap:</span> $
+                    {generatedPayrolls[selectedUser.employee_id].Salary_Cap}
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-700">Gross Salary:</span> $
+                    {generatedPayrolls[selectedUser.employee_id].gross_salary}
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-700">Official Leaves:</span>{" "}
+                    {generatedPayrolls[selectedUser.employee_id].official_leaves}
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-700">Daily Allowance:</span> $
+                    {generatedPayrolls[selectedUser.employee_id].daily_allowance_rate}/day
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-700">Hourly Wage:</span> $
+                    {generatedPayrolls[selectedUser.employee_id].hourly_wage}/hr
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Late and Absent Dates Section */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="mb-6"
+              >
+                <h5 className="text-lg font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <FaCalendar className="text-orange-500" /> Attendance Details
+                </h5>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h6 className="font-semibold text-gray-600 mb-2">Late Dates:</h6>
+                    {generatedPayrolls[selectedUser.employee_id].late_dates.length > 0 ? (
+                      <div className="border rounded-lg p-3 bg-white shadow-sm">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="bg-orange-100">
+                              <th className="p-2 text-left font-semibold">#</th>
+                              <th className="p-2 text-left font-semibold">Date</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <p className="text-xs italic text-gray-600">No late dates recorded</p>
-                  )}
-                </div>
-
-                <div className="mt-3">
-                  <div className="flex items-center gap-1 font-semibold mb-1">
-                    <FaCalendar className="text-orange-500" />
-                    Absent Dates:
+                          </thead>
+                          <tbody>
+                            {generatedPayrolls[selectedUser.employee_id].late_dates.map((date, index) => (
+                              <tr key={index} className="border-b">
+                                <td className="p-2">{index + 1}</td>
+                                <td className="p-2">{date}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <p className="text-sm italic text-gray-500">No late dates recorded</p>
+                    )}
                   </div>
-                  {generatedPayrolls[selectedUser.employee_id].absent_dates.length > 0 ? (
-                    <div className="border rounded p-2 bg-gray-50">
-                      <table className="w-full text-[9px]">
-                        <thead>
-                          <tr className="bg-orange-500">
-                            <th className="p-1 text-left">#</th>
-                            <th className="p-1 text-left">Date</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {generatedPayrolls[selectedUser.employee_id].absent_dates.map((date, index) => (
-                            <tr key={index} className="border-b">
-                              <td className="p-1">{index + 1}</td>
-                              <td className="p-1">{date}</td>
+                  <div>
+                    <h6 className="font-semibold text-gray-600 mb-2">Absent Dates:</h6>
+                    {generatedPayrolls[selectedUser.employee_id].absent_dates.length > 0 ? (
+                      <div className="border rounded-lg p-3 bg-white shadow-sm">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="bg-orange-100">
+                              <th className="p-2 text-left font-semibold">#</th>
+                              <th className="p-2 text-left font-semibold">Date</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <p className="text-xs italic text-gray-600">No absent dates recorded</p>
-                  )}
+                          </thead>
+                          <tbody>
+                            {generatedPayrolls[selectedUser.employee_id].absent_dates.map((date, index) => (
+                              <tr key={index} className="border-b">
+                                <td className="p-2">{index + 1}</td>
+                                <td className="p-2">{date}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <p className="text-sm italic text-gray-500">No absent dates recorded</p>
+                    )}
+                  </div>
                 </div>
-              </div>
+              </motion.div>
 
-              <div className="mt-4 flex justify-end">
-                <button
+              {/* Footer with Close Button */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                className="flex justify-end mt-6"
+              >
+                <motion.button
+                  variants={buttonVariants}
+                  whileHover="hover"
+                  whileTap="tap"
                   onClick={() => setIsShowPayrollOpen(false)}
-                  className="px-4 py-1 bg-orange-500 text-white rounded-lg hover:bg-gray-600 text-xs"
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg shadow-md flex items-center gap-2"
                 >
-                  Close
-                </button>
-              </div>
+                  <FaEye /> Close
+                </motion.button>
+              </motion.div>
             </motion.div>
           </div>
         )}
