@@ -14,7 +14,7 @@ import { useAuthStore } from "./Store/authStore";
 // Layout component to handle conditional rendering of Navbar and Footer
 const Layout = ({ children }) => {
   const location = useLocation();
-  const { user, role } = useAuthStore();
+  const { user } = useAuthStore();
   const isAuthPage = location.pathname === "/";
 
   // Show Navbar and Footer only if not on AuthPage and user is logged in
@@ -56,53 +56,51 @@ const App = () => {
           {/* If user is logged in */}
           {user && (
             <>
-              {/* Employee can only access ProfilePage */}
-              {role === "employee" && (
+              {/* Common route for all roles */}
+              <Route path="/view" element={<ViewDataPage />} />
+
+              {/* Employee routes */}
+              {role?.toLowerCase() === "employee" && (
                 <>
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/" element={<AuthPage />} />
-                  <Route path="*" element={<ProfilePage />} /> {/* Redirect all other paths */}
+                  <Route path="*" element={<ProfilePage />} /> {/* Redirect all other paths to Profile */}
                 </>
               )}
 
-              {/* Employer or HR can access all pages except Profile */}
-              {(role === "employer" || role === "HR") && (
+              {/* Employer or HR routes */}
+              {(role?.toLowerCase() === "employer" || role?.toLowerCase() === "hr") && (
                 <>
                   <Route
                     path="/uploadfile"
-                    element={<ProtectedRoute allowedRoles={["employer", "HR"]}><UploadPage /></ProtectedRoute>}
-                  />
-                  <Route
-                    path="/view"
-                    element={<ProtectedRoute allowedRoles={["employer", "HR"]}><ViewDataPage /></ProtectedRoute>}
+                    element={<ProtectedRoute allowedRoles={["employer", "HR", "hr"]}><UploadPage /></ProtectedRoute>}
                   />
                   <Route
                     path="/register"
-                    element={<ProtectedRoute allowedRoles={["employer", "HR"]}><RegisterUser /></ProtectedRoute>}
+                    element={<ProtectedRoute allowedRoles={["employer", "HR", "hr"]}><RegisterUser /></ProtectedRoute>}
                   />
                   <Route
                     path="/users"
-                    element={<ProtectedRoute allowedRoles={["employer", "HR"]}><AllRegisteredUsers /></ProtectedRoute>}
+                    element={<ProtectedRoute allowedRoles={["employer", "HR", "hr"]}><AllRegisteredUsers /></ProtectedRoute>}
                   />
                   <Route
                     path="/registerusers"
-                    element={<ProtectedRoute allowedRoles={["employer", "HR"]}><UserList /></ProtectedRoute>}
+                    element={<ProtectedRoute allowedRoles={["employer", "HR", "hr"]}><UserList /></ProtectedRoute>}
                   />
                   <Route path="/" element={<AuthPage />} /> {/* Default route */}
                   <Route path="*" element={<AuthPage />} /> {/* Fallback route */}
                 </>
               )}
 
-              {/* Fallback for other roles (e.g., admin) */}
-              {role !== "employee" && role !== "employer" && role !== "HR" && (
+              {/* Fallback for other roles (if any) */}
+              {role?.toLowerCase() !== "employee" && role?.toLowerCase() !== "employer" && role?.toLowerCase() !== "hr" && (
                 <>
                   <Route path="/uploadfile" element={<UploadPage />} />
-                  <Route path="/view" element={<ViewDataPage />} />
                   <Route path="/register" element={<RegisterUser />} />
                   <Route path="/users" element={<AllRegisteredUsers />} />
                   <Route path="/registerusers" element={<UserList />} />
-                  <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/" element={<ProfilePage />} />
+                  <Route path="*" element={<ProfilePage />} />
                 </>
               )}
             </>

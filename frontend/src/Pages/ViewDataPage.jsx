@@ -1,12 +1,14 @@
 import { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { useFileStore } from "../Store/useFileStore";
-import UserList from "./UserList"; // Import UserList component
+import { useAuthStore } from "../Store/authStore";
+import UserList from "./UserList";
 
-export let exportedId = null; // Exported ID variable
+export let exportedId = null;
 
 const ViewDataPage = () => {
   const { fileData, fetchFiles, fetchFileData, deleteFile } = useFileStore();
+  const { role, user } = useAuthStore(); // Get role and user from authStore
   const [selectedFileId, setSelectedFileId] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [tableData, setTableData] = useState([]);
@@ -25,7 +27,7 @@ const ViewDataPage = () => {
   const handleFileClick = async (file) => {
     setSelectedFile(file.filename);
     setLoading(true);
-    setSelectedFileId(file.id); // ✅ Store file ID in Zustand
+    setSelectedFileId(file.id);
     const content = await fetchFileData(file.id);
     setLoading(false);
 
@@ -34,7 +36,15 @@ const ViewDataPage = () => {
       return;
     }
     const parsedData = parseCSV(content);
-    setTableData(parsedData);
+    
+    // Filter data based on role
+    if (role === "employee" && user?.employee_id) {
+      const filteredData = filterEmployeeData(parsedData, user.employee_id);
+      setTableData(filteredData);
+    } else {
+      setTableData(parsedData);
+    }
+    
     setError("");
     setExpandedSections({});
   };
@@ -44,6 +54,22 @@ const ViewDataPage = () => {
     const data = rows.map((row) => row.split(","));
     if (data.length <= 7) return [];
     return data.slice(7);
+  };
+
+  // Function to filter data for specific employee
+  const filterEmployeeData = (data, employeeId) => {
+    const userIndex = data.findIndex(
+      (row) => row[0].trim() === "User ID" && row[1].trim() === employeeId
+    );
+    
+    if (userIndex === -1) return [];
+    
+    const nextUserIdIndex = data
+      .slice(userIndex + 1)
+      .findIndex((row) => row[0].trim() === "User ID");
+    const endIndex = nextUserIdIndex === -1 ? data.length : userIndex + nextUserIdIndex + 1;
+    
+    return data.slice(userIndex, endIndex);
   };
 
   const toggleExpand = (startIndex) => {
@@ -90,20 +116,23 @@ const ViewDataPage = () => {
                 <span onClick={() => handleFileClick(file)} className="cursor-pointer">
                   📄 {file.filename}
                 </span>
-                <button
-                  className="bg-orange-500 text-white px-3 py-1 rounded text-lg hover:bg-orange-600"
-                  onClick={() => deleteFile(file.id)}
-                >
-                  Delete
-                </button>
+                {/* Show Delete button only if role is 'hr' */}
+                {role === "hr" && (
+                  <button
+                    className="bg-orange-500 text-white px-3 py-1 rounded text-lg hover:bg-orange-600"
+                    onClick={() => deleteFile(file.id)}
+                  >
+                    Delete
+                  </button>
+                )}
               </li>
             ))
           )}
         </ul>
       </div>
 
-      {/* Search Bar */}
-      {selectedFile && (
+      {/* Search Bar - Only show for non-employee roles */}
+      {selectedFile && role !== "employee" && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -155,7 +184,9 @@ const ViewDataPage = () => {
                         <motion.tr
                           key={rowIndex}
                           ref={(el) => (rowRefs.current[rowIndex] = el)}
-                          className="border-b bg-yellow-200 font-bold cursor-pointer hover:bg-yellow-300"
+                          className={`border-b bg-yellow-200 font-bold cursor-pointer hover:bg-yellow-300 ${
+                            highlightedRow === rowIndex ? "bg-yellow-400" : ""
+                          }`}
                           onClick={() => toggleExpand(rowIndex)}
                           initial={{ opacity: 0, y: -5 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -188,7 +219,9 @@ const ViewDataPage = () => {
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -5 }}
                           transition={{ duration: 0.3 }}
-                          className="border-b hover:bg-gray-100"
+                          className={`border-b hover:bg-gray-100 ${
+                            highlightedRow === rowIndex ? "bg-gray-300" : ""
+                          }`}
                         >
                           {row.map((cell, cellIndex) => (
                             <td key={cellIndex} className="border text-sm p-1">
@@ -206,10 +239,9 @@ const ViewDataPage = () => {
           </div>
         </motion.div>
       )}
-<div style={{ display: "none" }}>
-  <UserList exportedId={selectedFileId} />
-</div>
-      
+      <div style={{ display: "none" }}>
+        <UserList exportedId={selectedFileId} />
+      </div>
     </div>
   );
 };

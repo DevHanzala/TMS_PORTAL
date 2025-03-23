@@ -21,7 +21,11 @@ import {
   Clock,
   GraduationCap,
   DollarSign,
-  FileText
+  FileText,
+  Contact, // Added for guardian_phone
+  UserPlus, // Added for reference_name
+  PhoneCall, // Added for reference_contact
+  Heart // Added for has_disease/disease_description
 } from "lucide-react";
 import { PDFDownloadLink, Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 
@@ -96,20 +100,18 @@ const styles = StyleSheet.create({
 // Helper function to format skills string
 const formatSkills = (skills) => {
   if (!skills) return '';
-  // If skills is an array (e.g., ["Scrum", "Kanban", "Agile"])
   if (Array.isArray(skills)) {
     return skills.map(skill => String(skill).trim()).join(', ');
   }
-  // If skills is a string (e.g., "Scrum,Kanban,Agile" or "scrumkanbanagile")
   if (typeof skills === 'string') {
     return skills.includes(',') 
       ? skills.split(',').map(skill => skill.trim()).join(', ')
-      : skills; // Return as-is if no commas
+      : skills;
   }
-  return String(skills); // Fallback for unexpected types
+  return String(skills);
 };
 
-// PDF Document Component with formatted skills
+// PDF Document Component with new fields
 const UserPDF = ({ user }) => (
   <Document>
     <Page size="A4" style={styles.page}>
@@ -143,6 +145,37 @@ const UserPDF = ({ user }) => (
             <Text style={styles.label}>Permanent Address:</Text>
             <Text style={styles.value}>{user.permanent_address}</Text>
           </View>
+          {/* Added: Guardian Phone */}
+          <View style={styles.fieldRow}>
+            <Text style={styles.label}>Guardian Phone:</Text>
+            <Text style={styles.value}>{user.guardian_phone}</Text>
+          </View>
+          {/* Added: Reference Name */}
+          {user.reference_name && (
+            <View style={styles.fieldRow}>
+              <Text style={styles.label}>Reference Name:</Text>
+              <Text style={styles.value}>{user.reference_name}</Text>
+            </View>
+          )}
+          {/* Added: Reference Contact */}
+          {user.reference_contact && (
+            <View style={styles.fieldRow}>
+              <Text style={styles.label}>Reference Contact:</Text>
+              <Text style={styles.value}>{user.reference_contact}</Text>
+            </View>
+          )}
+          {/* Added: Has Disease */}
+          <View style={styles.fieldRow}>
+            <Text style={styles.label}>Has Disease:</Text>
+            <Text style={styles.value}>{user.has_disease}</Text>
+          </View>
+          {/* Added: Disease Description */}
+          {user.disease_description && (
+            <View style={styles.fieldRow}>
+              <Text style={styles.label}>Disease Description:</Text>
+              <Text style={styles.value}>{user.disease_description}</Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.fieldGroup}>
@@ -257,7 +290,6 @@ const UserPDF = ({ user }) => (
             {user.skills && (
               <View style={styles.fieldRow}>
                 <Text style={styles.label}>Skills:</Text>
-                {/* Change 1: Format skills for PDF */}
                 <Text style={styles.value}>{formatSkills(user.skills)}</Text>
               </View>
             )}
@@ -486,7 +518,7 @@ const AllRegisteredUsers = () => {
         Back to Registration
       </Link>
 
-      {/* View Modal with formatted skills */}
+      {/* View Modal with new fields */}
       <AnimatePresence>
         {isViewModalOpen && viewingUser && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -579,6 +611,14 @@ const AllRegisteredUsers = () => {
                         <p className="font-medium">{viewingUser.contact_number}</p>
                       </div>
                     </div>
+                    {/* Added: Guardian Phone */}
+                    <div className="flex items-center space-x-3">
+                      <Contact className="h-5 w-5 text-gray-400" />
+                      <div>
+                        <p className="text-sm text-gray-500">Guardian Phone</p>
+                        <p className="font-medium">{viewingUser.guardian_phone}</p>
+                      </div>
+                    </div>
                     {viewingUser.in_time && (
                       <div className="flex items-center space-x-3">
                         <Clock className="h-5 w-5 text-gray-400" />
@@ -644,6 +684,14 @@ const AllRegisteredUsers = () => {
                         <p className="font-medium">{viewingUser.institute}</p>
                       </div>
                     </div>
+                    {/* Added: Has Disease */}
+                    <div className="flex items-center space-x-3">
+                      <Heart className="h-5 w-5 text-gray-400" />
+                      <div>
+                        <p className="text-sm text-gray-500">Has Disease</p>
+                        <p className="font-medium">{viewingUser.has_disease}</p>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="col-span-2 space-y-4">
@@ -704,20 +752,49 @@ const AllRegisteredUsers = () => {
                         <Users className="h-5 w-5 text-gray-400 mt-1" />
                         <div>
                           <p className="text-sm text-gray-500">Skills</p>
-                          {/* Change 2: Format skills for View Modal */}
                           <p className="font-medium">{formatSkills(viewingUser.skills)}</p>
                         </div>
                       </div>
                     )}
-                   {viewingUser.description && (
-  <div className="flex items-start space-x-3">
-    <FileText className="h-5 w-5 text-gray-400 mt-1" />
-    <div>
-      <p className="text-sm text-gray-500">Description</p>
-      <p className="font-medium">{viewingUser.description}</p>
-    </div>
-  </div>
-)}
+                    {viewingUser.description && (
+                      <div className="flex items-start space-x-3">
+                        <FileText className="h-5 w-5 text-gray-400 mt-1" />
+                        <div>
+                          <p className="text-sm text-gray-500">Description</p>
+                          <p className="font-medium">{viewingUser.description}</p>
+                        </div>
+                      </div>
+                    )}
+                    {/* Added: Reference Name */}
+                    {viewingUser.reference_name && (
+                      <div className="flex items-start space-x-3">
+                        <UserPlus className="h-5 w-5 text-gray-400 mt-1" />
+                        <div>
+                          <p className="text-sm text-gray-500">Reference Name</p>
+                          <p className="font-medium">{viewingUser.reference_name}</p>
+                        </div>
+                      </div>
+                    )}
+                    {/* Added: Reference Contact */}
+                    {viewingUser.reference_contact && (
+                      <div className="flex items-start space-x-3">
+                        <PhoneCall className="h-5 w-5 text-gray-400 mt-1" />
+                        <div>
+                          <p className="text-sm text-gray-500">Reference Contact</p>
+                          <p className="font-medium">{viewingUser.reference_contact}</p>
+                        </div>
+                      </div>
+                    )}
+                    {/* Added: Disease Description */}
+                    {viewingUser.disease_description && (
+                      <div className="flex items-start space-x-3">
+                        <Heart className="h-5 w-5 text-gray-400 mt-1" />
+                        <div>
+                          <p className="text-sm text-gray-500">Disease Description</p>
+                          <p className="font-medium">{viewingUser.disease_description}</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -726,7 +803,7 @@ const AllRegisteredUsers = () => {
         )}
       </AnimatePresence>
 
-      {/* Edit Modal with formatted skills */}
+      {/* Edit Modal with new fields */}
       <AnimatePresence>
         {isEditModalOpen && editingUser && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -846,6 +923,19 @@ const AllRegisteredUsers = () => {
                       className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
+                  {/* Added: Guardian Phone */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Guardian Phone
+                    </label>
+                    <input
+                      type="text"
+                      name="guardian_phone"
+                      value={editingUser.guardian_phone}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Registration Date
@@ -956,6 +1046,60 @@ const AllRegisteredUsers = () => {
                       type="number"
                       name="year"
                       value={editingUser.year}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  {/* Added: Reference Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Reference Name
+                    </label>
+                    <input
+                      type="text"
+                      name="reference_name"
+                      value={editingUser.reference_name || ""}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  {/* Added: Reference Contact */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Reference Contact
+                    </label>
+                    <input
+                      type="text"
+                      name="reference_contact"
+                      value={editingUser.reference_contact || ""}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  {/* Added: Has Disease */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Has Disease
+                    </label>
+                    <select
+                      name="has_disease"
+                      value={editingUser.has_disease}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="Yes">Yes</option>
+                      <option value="No">No</option>
+                    </select>
+                  </div>
+                  {/* Added: Disease Description */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Disease Description
+                    </label>
+                    <input
+                      type="text"
+                      name="disease_description"
+                      value={editingUser.disease_description || ""}
                       onChange={handleInputChange}
                       className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                     />

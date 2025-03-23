@@ -6,7 +6,7 @@ import { registerUserSchema } from "../Scheema/userScheema";
 const API_URL = "http://localhost:5000/api/users";
 const REGISTER_URL = `${API_URL}/upload`;
 
-export const useUserStore = create((set, get) => ({
+export const useUserStore = create((set) => ({
   users: [],
   loading: false,
   error: null,
@@ -24,13 +24,16 @@ export const useUserStore = create((set, get) => ({
           formData.append("image", validatedData[key]);
           console.log("📸 Image appended:", validatedData[key].name);
         } else if (key === "skills" && validatedData[key]) {
-          // Change 1: Convert skills string to JSON array
-          const skillsArray = validatedData[key].split(",").map(skill => skill.trim());
-          formData.append(key, JSON.stringify(skillsArray)); // Send as JSON string
+          const skillsArray = validatedData[key].split(",").map((skill) => skill.trim());
+          formData.append(key, JSON.stringify(skillsArray));
           console.log("🛠️ Skills appended as JSON:", JSON.stringify(skillsArray));
-        } else if (validatedData[key] !== undefined) {
-          formData.append(key, validatedData[key]);
-          console.log(`➡️ Field ${key} appended:`, validatedData[key]);
+        } else if (validatedData[key] !== undefined && validatedData[key] !== null) {
+          if (["registration_date", "joining_date", "dob"].includes(key)) {
+            formData.append(key, validatedData[key].toISOString().split("T")[0]);
+          } else {
+            formData.append(key, validatedData[key]);
+          }
+          console.log(`➡️ Field ${key} appended:`, formData.get(key));
         }
       }
 
@@ -49,13 +52,15 @@ export const useUserStore = create((set, get) => ({
       if (error instanceof z.ZodError) {
         console.error("❌ Zod validation error:", error.errors);
         set({
-          error: error.errors.map(e => e.message).join(", "),
+          error: error.errors.map((e) => e.message).join(", "),
           loading: false,
         });
       } else {
-        console.error("❌ API error:", error.response?.status, error.response?.data || error.message);
+        const errorMessage = error.response?.data?.message || "Error registering user";
+        const errorDetails = error.response?.data?.error || error.message;
+        console.error("❌ API error:", error.response?.status, { message: errorMessage, error: errorDetails });
         set({
-          error: error.response?.data?.message || "Error registering user",
+          error: `${errorMessage}${errorDetails ? `: ${errorDetails}` : ""}`,
           loading: false,
         });
       }
@@ -89,11 +94,27 @@ export const useUserStore = create((set, get) => ({
           formData.append("image", updatedData[key]);
           console.log("📸 Image appended:", updatedData[key].name);
         } else if (key === "skills" && updatedData[key]) {
-          formData.append(key, updatedData[key]);
-          console.log("🛠️ Skills appended:", updatedData[key]);
-        } else if (updatedData[key] !== undefined) {
-          formData.append(key, updatedData[key]);
-          console.log(`➡️ Field ${key} appended:`, updatedData[key]);
+          // Fixed: Convert skills string to array and stringify it
+          const skillsArray = Array.isArray(updatedData[key])
+            ? updatedData[key]
+            : updatedData[key].split(",").map((skill) => skill.trim());
+          formData.append(key, JSON.stringify(skillsArray));
+          console.log("🛠️ Skills appended as JSON:", JSON.stringify(skillsArray));
+        } else if (updatedData[key] !== undefined && updatedData[key] !== null) {
+          if (["registration_date", "joining_date", "dob"].includes(key)) {
+            let dateValue = updatedData[key];
+            if (dateValue instanceof Date) {
+              formData.append(key, dateValue.toISOString().split("T")[0]);
+            } else if (typeof dateValue === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+              formData.append(key, dateValue);
+            } else {
+              console.warn(`⚠️ Invalid date format for ${key}:`, dateValue);
+              continue;
+            }
+          } else {
+            formData.append(key, updatedData[key]);
+          }
+          console.log(`➡️ Field ${key} appended:`, formData.get(key));
         }
       }
 

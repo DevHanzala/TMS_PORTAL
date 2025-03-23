@@ -2,9 +2,11 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { sequelize, connectDB } from "./DB/DBconnection.js";
+import "./models/userModel.js"; // Register User model
+import "./models/fileModel.js"; // Register File model
 import userRoutes from "./routes/userRoute.js";
 import fileRoutes from "./routes/fileRoute.js";
-import authRoutes from "./routes/authRoute.js"; // Add this
+import authRoutes from "./routes/authRoute.js";
 
 dotenv.config();
 const app = express();
@@ -20,11 +22,10 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-connectDB();
-
+// Changed: No explicit connectDB() call here, handled in DBconnection.js
 app.use("/api/users", userRoutes);
 app.use("/api/files", fileRoutes);
-app.use("/api/auth", authRoutes); // Add this
+app.use("/api/auth", authRoutes);
 
 app.get("/", (req, res) => {
   res.send("MERN Backend with PostgreSQL is Running...");

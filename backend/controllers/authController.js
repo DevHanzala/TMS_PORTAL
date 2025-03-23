@@ -3,23 +3,20 @@ import { QueryTypes } from "sequelize";
 
 // Controller for handling authentication logic
 export const authController = {
-  // Login function for both Employee and HR/Employer
   login: async (req, res) => {
-    const { stakeholder, email, cnic, password } = req.body; // Changed cnic_no to cnic
+    const { stakeholder, email, cnic, password } = req.body;
     console.log('Received login request:', req.body);
 
     try {
       if (stakeholder === 'employee') {
-        // Employee login: Validate email and CNIC against DB
-        if (!email || !cnic) { // Changed cnic_no to cnic
+        if (!email || !cnic) {
           return res.status(400).json({ message: 'Email and CNIC are required for employee login' });
         }
 
-        // Query to check if user exists with given email and CNIC
         const users = await sequelize.query(
-          'SELECT * FROM users WHERE email = :email AND cnic = :cnic', // Changed cnic_no to cnic
+          'SELECT * FROM users WHERE email = :email AND cnic = :cnic',
           {
-            replacements: { email, cnic }, // Changed cnic_no to cnic
+            replacements: { email, cnic },
             type: QueryTypes.SELECT,
           }
         );
@@ -28,27 +25,66 @@ export const authController = {
           return res.status(401).json({ message: 'Invalid email or CNIC' });
         }
 
-        // Employee authenticated successfully
         const user = users[0];
+        console.log('Raw user data from DB:', user);
+
+        // Convert bytea image to Base64 if it exists
+        let imageBase64 = null;
+        if (user.image) {
+          imageBase64 = Buffer.from(user.image).toString('base64');
+        }
+
         return res.status(200).json({
           message: 'Employee login successful',
-          user: { id: user.id, email: user.email, role: 'employee' }
+          user: {
+            id: user.id,
+            employee_id: user.employee_id,
+            registration_date: user.registration_date,
+            joining_date: user.joining_date,
+            post_applied_for: user.post_applied_for,
+            full_name: user.full_name,
+            gender: user.gender,
+            cnic: user.cnic,
+            dob: user.dob,
+            permanent_address: user.permanent_address,
+            contact_number: user.contact_number,
+            email: user.email,
+            degree: user.degree,
+            institute: user.institute,
+            grade: user.grade,
+            year: user.year,
+            teaching_subjects: user.teaching_subjects,
+            teaching_institute: user.teaching_institute,
+            teaching_contact: user.teaching_contact,
+            position: user.position,
+            organization: user.organization,
+            skills: user.skills,
+            description: user.description,
+            in_time: user.in_time,
+            out_time: user.out_time,
+            Salary_Cap: user.Salary_Cap,
+            role: 'employee',
+            image: imageBase64 ? `data:image/jpeg;base64,${imageBase64}` : null,
+            guardian_phone: user.guardian_phone,         // Added
+            reference_name: user.reference_name,         // Added
+            reference_contact: user.reference_contact,   // Added
+            has_disease: user.has_disease,               // Added
+            disease_description: user.disease_description // Added
+          },
         });
       } else if (stakeholder === 'hr') {
-        // HR/Employer login: Check specific password
         if (!password) {
           return res.status(400).json({ message: 'Password is required for HR login' });
         }
 
-        const hrPassword = 'tmsportal123'; // Hardcoded HR password (consider hashing in production)
+        const hrPassword = 'tmsportal123';
         if (password !== hrPassword) {
           return res.status(401).json({ message: 'Invalid HR password' });
         }
 
-        // HR authenticated successfully
         return res.status(200).json({
           message: 'HR login successful',
-          user: { role: 'hr' }
+          user: { role: 'hr' },
         });
       } else {
         return res.status(400).json({ message: 'Invalid stakeholder type' });
@@ -57,5 +93,73 @@ export const authController = {
       console.error('Login error:', error);
       return res.status(500).json({ message: 'Internal server error' });
     }
-  }
+  },
+
+  getUserProfile: async (req, res) => {
+    const { id } = req.params;
+
+    try {
+      const users = await sequelize.query(
+        'SELECT * FROM users WHERE id = :id',
+        {
+          replacements: { id },
+          type: QueryTypes.SELECT,
+        }
+      );
+
+      if (users.length === 0) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      const user = users[0];
+      console.log('Raw user data from DB (profile):', user);
+
+      // Convert bytea image to Base64 if it exists
+      let imageBase64 = null;
+      if (user.image) {
+        imageBase64 = Buffer.from(user.image).toString('base64');
+      }
+
+      return res.status(200).json({
+        user: {
+          id: user.id,
+          employee_id: user.employee_id,
+          registration_date: user.registration_date,
+          joining_date: user.joining_date,
+          post_applied_for: user.post_applied_for,
+          full_name: user.full_name,
+          gender: user.gender,
+          cnic: user.cnic,
+          dob: user.dob,
+          permanent_address: user.permanent_address,
+          contact_number: user.contact_number,
+          email: user.email,
+          degree: user.degree,
+          institute: user.institute,
+          grade: user.grade,
+          year: user.year,
+          teaching_subjects: user.teaching_subjects,
+          teaching_institute: user.teaching_institute,
+          teaching_contact: user.teaching_contact,
+          position: user.position,
+          organization: user.organization,
+          skills: user.skills,
+          description: user.description,
+          in_time: user.in_time,
+          out_time: user.out_time,
+          Salary_Cap: user.Salary_Cap,
+          role: 'employee',
+          image: imageBase64 ? `data:image/jpeg;base64,${imageBase64}` : null,
+          guardian_phone: user.guardian_phone,         // Added
+          reference_name: user.reference_name,         // Added
+          reference_contact: user.reference_contact,   // Added
+          has_disease: user.has_disease,               // Added
+          disease_description: user.disease_description // Added
+        },
+      });
+    } catch (error) {
+      console.error('Get profile error:', error);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  },
 };

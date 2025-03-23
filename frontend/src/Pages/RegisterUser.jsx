@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { registerUserSchema } from "../Scheema/userScheema";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaUser, FaEnvelope, FaGraduationCap, FaBriefcase, FaPlus, FaArrowRight, FaArrowLeft, FaCheckCircle, FaClock, FaMoneyBillWave, FaSchool, FaChalkboardTeacher } from "react-icons/fa";
+import { FaUser, FaEnvelope, FaGraduationCap, FaBriefcase, FaPlus, FaArrowRight, FaArrowLeft, FaCheckCircle, FaClock, FaMoneyBillWave, FaSchool, FaChalkboardTeacher, FaPhone, FaHeartbeat } from "react-icons/fa";
 
 const RegisterUser = () => {
   const { registerUser, loading, error } = useUserStore();
@@ -26,7 +26,8 @@ const RegisterUser = () => {
   const requiredFields = [
     "employee_id", "registration_date", "joining_date", "post_applied_for",
     "full_name", "gender", "cnic", "dob", "permanent_address", "contact_number",
-    "email", "degree", "institute", "grade", "year", "in_time", "out_time", "Salary_Cap"
+    "email", "degree", "institute", "grade", "year", "in_time", "out_time", 
+    "Salary_Cap", "guardian_phone" // Added new required field
   ];
 
   useEffect(() => {
@@ -45,7 +46,7 @@ const RegisterUser = () => {
   }, [formValues]);
 
   const onSubmit = async (data) => {
-    console.log("🚀 Form submitted with data:", data); // Debug: Log form data
+    console.log("🚀 Form submitted with data:", data);
     if (!isValid) {
       console.error("❌ Validation failed:", errors);
       return;
@@ -60,8 +61,6 @@ const RegisterUser = () => {
         setImagePreview(null);
         setStep(1);
         setProgress(0);
-      } else {
-        console.error("❌ No user data returned from registerUser");
       }
     } catch (error) {
       console.error("❌ Submission error:", error);
@@ -71,7 +70,6 @@ const RegisterUser = () => {
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      console.log("📸 Image uploaded:", file.name);
       setValue("image", file);
       const reader = new FileReader();
       reader.onloadend = () => setImagePreview(reader.result);
@@ -81,26 +79,19 @@ const RegisterUser = () => {
 
   const nextStep = () => {
     if (step === 1) {
-      const step1Required = ["full_name", "email", "gender", "cnic", "dob", "contact_number", "permanent_address"];
+      const step1Required = ["full_name", "email", "gender", "cnic", "dob", "contact_number", "permanent_address", "guardian_phone"];
       const hasErrors = step1Required.some((field) => errors[field]);
-      if (!hasErrors) {
-        console.log("➡️ Moving to Step 2");
-        setStep(2);
-      }
+      if (!hasErrors) setStep(2);
     } else if (step === 2) {
       const step2Required = ["degree", "institute", "grade", "year"];
       const hasErrors = step2Required.some((field) => errors[field]);
-      if (!hasErrors) {
-        console.log("➡️ Moving to Step 3");
-        setStep(3);
-      }
+      if (!hasErrors) setStep(3);
     }
   };
 
-  const prevStep = () => {
-    console.log("⬅️ Moving to Step", step - 1);
-    setStep(step - 1);
-  };
+  const prevStep = () => setStep(step - 1);
+
+  const hasDisease = watch("has_disease") === "Yes";
 
   return (
     <motion.div
@@ -169,6 +160,33 @@ const RegisterUser = () => {
                 <input type="text" {...register("permanent_address")} placeholder="Permanent Address" className="w-full p-2 border border-gray-300 rounded-md" />
                 {errors.permanent_address && <p className="text-red-500">{errors.permanent_address.message}</p>}
 
+                {/* New Field: Guardian/Alternate Phone (Required) */}
+                <input 
+                  type="text" 
+                  {...register("guardian_phone")} 
+                  placeholder="Guardian/Alternate Phone (11 digits)" 
+                  className="w-full p-2 border border-gray-300 rounded-md" 
+                />
+                {errors.guardian_phone && <p className="text-red-500">{errors.guardian_phone.message}</p>}
+
+                {/* New Field: Reference Person Name (Optional) */}
+                <input 
+                  type="text" 
+                  {...register("reference_name")} 
+                  placeholder="Reference Person Name (optional)" 
+                  className="w-full p-2 border border-gray-300 rounded-md" 
+                />
+                {errors.reference_name && <p className="text-red-500">{errors.reference_name.message}</p>}
+
+                {/* New Field: Reference Contact (Optional) */}
+                <input 
+                  type="text" 
+                  {...register("reference_contact")} 
+                  placeholder="Reference Contact (11 digits, optional)" 
+                  className="w-full p-2 border border-gray-300 rounded-md" 
+                />
+                {errors.reference_contact && <p className="text-red-500">{errors.reference_contact.message}</p>}
+
                 <input type="file" accept="image/*" onChange={handleImageUpload} className="w-full p-2 border border-gray-300 rounded-md" />
                 {imagePreview && (
                   <motion.img
@@ -234,16 +252,7 @@ const RegisterUser = () => {
                   placeholder="Teaching Contact (11 digits, optional)"
                   className="w-full p-2 border border-gray-300 rounded-md"
                 />
-                {errors.teaching_contact && (
-                  <motion.p
-                    className="text-red-500"
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    {errors.teaching_contact.message}
-                  </motion.p>
-                )}
+                {errors.teaching_contact && <p className="text-red-500">{errors.teaching_contact.message}</p>}
               </div>
 
               <div className="space-y-4 border-b pb-4">
@@ -317,7 +326,6 @@ const RegisterUser = () => {
                 </select>
                 {errors.post_applied_for && <p className="text-red-500">{errors.post_applied_for.message}</p>}
 
-                {/* Change 2: Updated placeholders and ensured input type="time" works with 24-hour HH:MM */}
                 <label className="font-thin text-sm">Check-In-Time</label>
                 <input
                   type="time"
@@ -345,19 +353,41 @@ const RegisterUser = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
                 />
-                {errors.Salary_Cap && (
-                  <motion.p
-                    className="text-red-500"
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    {errors.Salary_Cap.message}
-                  </motion.p>
-                )}
+                {errors.Salary_Cap && <p className="text-red-500">{errors.Salary_Cap.message}</p>}
 
                 <textarea {...register("description")} placeholder="Description (optional)" className="w-full p-2 border border-gray-300 rounded-md" />
                 {errors.description && <p className="text-red-500">{errors.description.message}</p>}
+              </div>
+
+              {/* New Section: Health Information */}
+              <div className="space-y-4 border-b pb-4">
+                <h3 className="text-lg font-semibold flex items-center"><FaHeartbeat className="mr-2" /> Health Information</h3>
+                <select 
+                  {...register("has_disease")} 
+                  defaultValue="" 
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                >
+                  <option value="" disabled>Any Disease?</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+                {errors.has_disease && <p className="text-red-500">{errors.has_disease.message}</p>}
+
+                {hasDisease && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <textarea 
+                      {...register("disease_description")} 
+                      placeholder="Describe the disease" 
+                      className="w-full p-2 border border-gray-300 rounded-md" 
+                    />
+                    {errors.disease_description && <p className="text-red-500">{errors.disease_description.message}</p>}
+                  </motion.div>
+                )}
               </div>
 
               <div className="flex justify-between">

@@ -27,7 +27,7 @@ const User = sequelize.define("User", {
   post_applied_for: { 
     type: DataTypes.ENUM("Employee", "Internship"), 
     allowNull: false,
-    // comment: "Position applied for: Employee or Internship" // Simplified comment
+    comment: "Position applied for: Employee or Internship"
   },
   full_name: { 
     type: DataTypes.STRING, 
@@ -37,7 +37,7 @@ const User = sequelize.define("User", {
   gender: { 
     type: DataTypes.ENUM("Male", "Female"), 
     allowNull: false,
-    // comment: "Gender of the user" // Simplified to avoid confusion
+    comment: "Gender of the user"
   },
   cnic: { 
     type: DataTypes.STRING, 
@@ -154,9 +154,43 @@ const User = sequelize.define("User", {
     validate: { min: 0 },
     comment: "Salary capacity of the user in whole currency units (e.g., 50000)"
   },
+  // New Fields Added Below
+  guardian_phone: { // Added: Required guardian/alternate phone number
+    type: DataTypes.STRING,
+    allowNull: false,
+    validate: {
+      len: [11, 11],
+      isNumeric: true,
+    },
+    comment: "Guardian or alternate contact number (11 digits, required)"
+  },
+  reference_name: { // Added: Optional reference person name
+    type: DataTypes.STRING,
+    allowNull: true,
+    comment: "Name of a reference person (optional)"
+  },
+  reference_contact: { // Added: Optional reference contact number
+    type: DataTypes.STRING,
+    allowNull: true,
+    validate: {
+      len: [0, 11],
+      isNumeric: (val) => !val || /^\d+$/.test(val),
+    },
+    comment: "Contact number of reference person (11 digits if provided, optional)"
+  },
+  has_disease: { // Added: Required field to indicate if user has a disease
+    type: DataTypes.ENUM("Yes", "No"),
+    allowNull: false,
+    comment: "Indicates if the user has any disease (Yes/No)"
+  },
+  disease_description: { // Added: Optional disease description, required if has_disease is 'Yes'
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: "Description of disease if present (required if has_disease is 'Yes')"
+  },
 }, {
   timestamps: true,
-  tableName: "users", // Explicitly set to "users"
+  tableName: "users",
   comment: "Table storing user data with timestamps for creation and updates"
 });
 
