@@ -1,37 +1,81 @@
 import { create } from "zustand";
 import axios from "axios";
+import { payrollSchema } from "../Scheema/payrollScheema";
 
-const usePayrollStore = create((set) => ({
+const API_URL = "http://localhost:5000/api/payrolls";
+
+export const usePayrollStore = create((set) => ({
   payrollData: [],
-  fetchPayrollData: async (fileId) => {
-    if (!fileId) return;
+  loading: false,
+  error: null,
 
+  fetchPayrolls: async () => {
+    set({ loading: true, error: null });
     try {
-      const response = await axios.get(`/api/files/${fileId}`);
-      const csvText = response.data.filedata;
-
-      if (!csvText) {
-        console.error("Empty file data received.");
-        return;
-      }
-
-      // Convert CSV to JSON
-      const rows = csvText.trim().split("\n").slice(1);
-      const payrollData = rows
-        .map((row) => {
-          const values = row.split(",").map((val) => val.trim());
-          if (values.length !== 5) return null; // Ensure correct column count
-
-          const [employee_name, employee_id, salary, department, month] = values;
-          return { employee_name, employee_id, salary, department, month };
-        })
-        .filter(Boolean); // Remove null values
-
-      set({ payrollData });
+      const response = await axios.get(API_URL);
+      set({ payrollData: response.data, loading: false });
     } catch (error) {
-      console.error("Error fetching payroll data:", error);
+      set({ error: error.response?.data?.message || "Failed to fetch payrolls", loading: false });
+    }
+  },
+
+  createPayrolls: async (payrolls) => {
+    set({ loading: true, error: null });
+    try {
+      const validatedPayrolls = payrolls.map((payroll) => payrollSchema.parse(payroll));
+      const response = await axios.post(API_URL, validatedPayrolls);
+      set((state) => ({
+        payrollData: [...state.payrollData, ...response.data],
+        loading: false,
+      }));
+      return { success: true, message: "Payrolls created successfully", data: response.data };
+    } catch (error) {
+      set({ error: error.message || "Failed to create payrolls", loading: false });
+      return { success: false, message: error.message || "Failed to create payrolls" };
+    }
+  },
+
+  updatePayroll: async (id, updatedPayroll) => {
+    set({ loading: true, error: null });
+    try {
+      if (!id) throw new Error("Payroll ID is required for update");
+      const validatedPayroll = payrollSchema.parse(updatedPayroll);
+      const response = await axios.put(`${API_URL}/${id}`, validatedPayroll);
+      set((state) => ({
+        payrollData: state.payrollData.map((p) => (p.id === id ? response.data : p)),
+        loading: false,
+      }));
+      return { success: true, message: "Payroll updated successfully" };
+    } catch (error) {
+      set({ error: error.message || "Failed to update payroll", loading: false });
+      return { success: false, message: error.message || "Failed to update payroll" };
+    }
+  },
+
+  deletePayroll: async (id) => {
+    set({ loading: true, error: null });
+    try {
+      await axios.delete(`${API_URL}/${id}`);
+      set((state) => ({
+        payrollData: state.payrollData.filter((p) => p.id !== id),
+        loading: false,
+      }));
+      return { success: true, message: "Payroll deleted successfully" };
+    } catch (error) {
+      set({ error: error.message || "Failed to delete payroll", loading: false });
+      return { success: false, message: error.message || "Failed to delete payroll" };
+    }
+  },
+
+  deleteAllPayrolls: async () => {
+    set({ loading: true, error: null });
+    try {
+      await axios.delete(API_URL);
+      set({ payrollData: [], loading: false });
+      return { success: true, message: "All payrolls deleted successfully" };
+    } catch (error) {
+      set({ error: error.message || "Failed to delete all payrolls", loading: false });
+      return { success: false, message: error.message || "Failed to delete all payrolls" };
     }
   },
 }));
-
-export default usePayrollStore;

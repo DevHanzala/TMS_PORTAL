@@ -8,6 +8,25 @@ import { User, Mail, Lock, IdCard, Loader2 } from 'lucide-react'; // Lucide icon
 import { motion, AnimatePresence } from 'framer-motion';
 import logo from '../assets/TMS-LOGO.webp';
 
+// Popup Message Component
+const PopupMessage = ({ message, type, onClose }) => (
+  <AnimatePresence>
+    {message && (
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        transition={{ duration: 0.3 }}
+        className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+          type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+        }`}
+      >
+        {message}
+      </motion.div>
+    )}
+  </AnimatePresence>
+);
+
 const HrManagementModal = ({ isOpen, onClose, onSubmit, hrList, onDelete }) => {
   const {
     register,
@@ -15,7 +34,7 @@ const HrManagementModal = ({ isOpen, onClose, onSubmit, hrList, onDelete }) => {
     reset,
     formState: { errors },
   } = useForm({
-    defaultValues: { hrEmail: '', hrPassword: '' }, // Simplified
+    defaultValues: { hrEmail: '', hrPassword: '' },
   });
 
   const handleFormSubmit = (data) => {
@@ -119,6 +138,7 @@ const AuthPage = () => {
   const navigate = useNavigate();
   const [isHrModalOpen, setIsHrModalOpen] = useState(false);
   const [hrList, setHrList] = useState([]);
+  const [popupMessage, setPopupMessage] = useState(null);
 
   const {
     register,
@@ -142,9 +162,17 @@ const AuthPage = () => {
       fetch('http://localhost:5000/api/auth/hr-list')
         .then(response => response.json())
         .then(data => setHrList(data.hrList))
-        .catch(error => console.error('Error fetching HR list:', error));
+        .catch(error => {
+          console.error('Error fetching HR list:', error);
+          setPopupMessage({ text: 'Error fetching HR list', type: 'error' });
+        });
     }
   }, [isHrModalOpen]);
+
+  const showPopup = (text, type = 'success') => {
+    setPopupMessage({ text, type });
+    setTimeout(() => setPopupMessage(null), 3000); // Auto-dismiss after 3 seconds
+  };
 
   const onSubmit = async (data) => {
     const credentials =
@@ -156,6 +184,7 @@ const AuthPage = () => {
 
     const success = await login(data.stakeholder, credentials);
     if (success) {
+      showPopup(`Logged in as ${data.stakeholder} successfully`);
       if (data.stakeholder === 'employee') {
         navigate('/users');
       } else if (data.stakeholder === 'hr') {
@@ -163,6 +192,8 @@ const AuthPage = () => {
       } else if (data.stakeholder === 'superadmin') {
         navigate('/users');
       }
+    } else {
+      showPopup(error || 'Login failed', 'error');
     }
   };
 
@@ -171,7 +202,7 @@ const AuthPage = () => {
     if (password === 'tmsportal123') {
       setIsHrModalOpen(true);
     } else {
-      alert('Invalid Super Admin Password');
+      showPopup('Invalid Super Admin Password', 'error');
     }
   };
 
@@ -183,15 +214,15 @@ const AuthPage = () => {
         body: JSON.stringify({ email: data.hrEmail, password: data.hrPassword }),
       });
       if (response.ok) {
-        alert('HR/Employer created successfully');
+        showPopup('HR/Employer created successfully');
         const updatedList = await fetch('http://localhost:5000/api/auth/hr-list').then(res => res.json());
         setHrList(updatedList.hrList);
       } else {
-        alert('Failed to create HR/Employer');
+        showPopup('Failed to create HR/Employer', 'error');
       }
     } catch (error) {
       console.error('Error creating HR:', error);
-      alert('Error creating HR/Employer');
+      showPopup('Error creating HR/Employer', 'error');
     }
   };
 
@@ -203,15 +234,15 @@ const AuthPage = () => {
         body: JSON.stringify({ email }),
       });
       if (response.ok) {
-        alert('HR/Employer deleted successfully');
+        showPopup('HR/Employer deleted successfully');
         const updatedList = await fetch('http://localhost:5000/api/auth/hr-list').then(res => res.json());
         setHrList(updatedList.hrList);
       } else {
-        alert('Failed to delete HR/Employer');
+        showPopup('Failed to delete HR/Employer', 'error');
       }
     } catch (error) {
       console.error('Error deleting HR:', error);
-      alert('Error deleting HR/Employer');
+      showPopup('Error deleting HR/Employer', 'error');
     }
   };
 
@@ -341,17 +372,6 @@ const AuthPage = () => {
             </motion.div>
           )}
 
-          {error && (
-            <motion.div
-              className="text-red-500 text-xs text-center"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.3, delay: 0.1 }}
-            >
-              {error}
-            </motion.div>
-          )}
-
           <motion.button
             type="submit"
             disabled={loading}
@@ -390,6 +410,12 @@ const AuthPage = () => {
         onSubmit={handleHrSubmit}
         hrList={hrList}
         onDelete={handleHrDelete}
+      />
+
+      <PopupMessage
+        message={popupMessage?.text}
+        type={popupMessage?.type}
+        onClose={() => setPopupMessage(null)}
       />
     </div>
   );

@@ -6,11 +6,29 @@ import { registerUserSchema } from "../Scheema/userScheema";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaUser, FaEnvelope, FaGraduationCap, FaBriefcase, FaPlus, FaArrowRight, FaArrowLeft, FaCheckCircle, FaClock, FaMoneyBillWave, FaSchool, FaChalkboardTeacher, FaPhone, FaHeartbeat } from "react-icons/fa";
 
+// Popup Message Component
+const PopupMessage = ({ message, type }) => (
+  <AnimatePresence>
+    {message && (
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        transition={{ duration: 0.3 }}
+        className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${type === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
+      >
+        {message}
+      </motion.div>
+    )}
+  </AnimatePresence>
+);
+
 const RegisterUser = () => {
   const { registerUser, loading, error } = useUserStore();
   const [imagePreview, setImagePreview] = useState(null);
   const [step, setStep] = useState(1);
   const [progress, setProgress] = useState(0);
+  const [popupMessage, setPopupMessage] = useState(null);
 
   const {
     register,
@@ -26,17 +44,17 @@ const RegisterUser = () => {
   const requiredFields = [
     "employee_id", "registration_date", "joining_date", "post_applied_for",
     "full_name", "gender", "cnic", "dob", "permanent_address", "contact_number",
-    "email", "degree", "institute", "grade", "year", "in_time", "out_time", 
-    "Salary_Cap", "guardian_phone" // Added new required field
+    "email", "degree", "institute", "grade", "year", "in_time", "out_time",
+    "Salary_Cap", "guardian_phone"
   ];
 
   useEffect(() => {
     const totalRequiredFields = requiredFields.length;
-    const filledRequiredFields = requiredFields.filter(field => 
+    const filledRequiredFields = requiredFields.filter(field =>
       formValues[field] !== undefined && formValues[field] !== ""
     ).length;
     const optionalFields = Object.keys(formValues).filter(key => !requiredFields.includes(key));
-    const filledOptionalFields = optionalFields.filter(field => 
+    const filledOptionalFields = optionalFields.filter(field =>
       formValues[field] !== undefined && formValues[field] !== ""
     ).length;
     const totalFields = requiredFields.length + optionalFields.length;
@@ -45,10 +63,16 @@ const RegisterUser = () => {
     setProgress(Math.min(baseProgress + optionalBonus, 100));
   }, [formValues]);
 
+  const showPopup = (text, type = "success") => {
+    setPopupMessage({ text, type });
+    setTimeout(() => setPopupMessage(null), 3000); // Auto-dismiss after 3 seconds
+  };
+
   const onSubmit = async (data) => {
     console.log("🚀 Form submitted with data:", data);
     if (!isValid) {
       console.error("❌ Validation failed:", errors);
+      showPopup("Validation failed. Please check your inputs.", "error");
       return;
     }
 
@@ -56,7 +80,7 @@ const RegisterUser = () => {
       const result = await registerUser(data);
       if (result) {
         console.log("✅ User registered successfully:", result);
-        alert("✅ User added successfully!");
+        showPopup("User added successfully!");
         reset();
         setImagePreview(null);
         setStep(1);
@@ -64,6 +88,7 @@ const RegisterUser = () => {
       }
     } catch (error) {
       console.error("❌ Submission error:", error);
+      showPopup(error.message || "Failed to register user", "error");
     }
   };
 
@@ -104,7 +129,9 @@ const RegisterUser = () => {
         <FaUser className="mr-2" /> Register Employee
       </h2>
 
-      {error && <p className="text-red-500 mb-4">{error}</p>}
+      {error && !popupMessage && (
+        <p className="text-red-500 mb-4">{error}</p>
+      )}
 
       <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6">
         <motion.div
@@ -160,30 +187,27 @@ const RegisterUser = () => {
                 <input type="text" {...register("permanent_address")} placeholder="Permanent Address" className="w-full p-2 border border-gray-300 rounded-md" />
                 {errors.permanent_address && <p className="text-red-500">{errors.permanent_address.message}</p>}
 
-                {/* New Field: Guardian/Alternate Phone (Required) */}
-                <input 
-                  type="text" 
-                  {...register("guardian_phone")} 
-                  placeholder="Guardian/Alternate Phone (11 digits)" 
-                  className="w-full p-2 border border-gray-300 rounded-md" 
+                <input
+                  type="text"
+                  {...register("guardian_phone")}
+                  placeholder="Guardian/Alternate Phone (11 digits)"
+                  className="w-full p-2 border border-gray-300 rounded-md"
                 />
                 {errors.guardian_phone && <p className="text-red-500">{errors.guardian_phone.message}</p>}
 
-                {/* New Field: Reference Person Name (Optional) */}
-                <input 
-                  type="text" 
-                  {...register("reference_name")} 
-                  placeholder="Reference Person Name (optional)" 
-                  className="w-full p-2 border border-gray-300 rounded-md" 
+                <input
+                  type="text"
+                  {...register("reference_name")}
+                  placeholder="Reference Person Name (optional)"
+                  className="w-full p-2 border border-gray-300 rounded-md"
                 />
                 {errors.reference_name && <p className="text-red-500">{errors.reference_name.message}</p>}
 
-                {/* New Field: Reference Contact (Optional) */}
-                <input 
-                  type="text" 
-                  {...register("reference_contact")} 
-                  placeholder="Reference Contact (11 digits, optional)" 
-                  className="w-full p-2 border border-gray-300 rounded-md" 
+                <input
+                  type="text"
+                  {...register("reference_contact")}
+                  placeholder="Reference Contact (11 digits, optional)"
+                  className="w-full p-2 border border-gray-300 rounded-md"
                 />
                 {errors.reference_contact && <p className="text-red-500">{errors.reference_contact.message}</p>}
 
@@ -359,12 +383,11 @@ const RegisterUser = () => {
                 {errors.description && <p className="text-red-500">{errors.description.message}</p>}
               </div>
 
-              {/* New Section: Health Information */}
               <div className="space-y-4 border-b pb-4">
                 <h3 className="text-lg font-semibold flex items-center"><FaHeartbeat className="mr-2" /> Health Information</h3>
-                <select 
-                  {...register("has_disease")} 
-                  defaultValue="" 
+                <select
+                  {...register("has_disease")}
+                  defaultValue=""
                   className="w-full p-2 border border-gray-300 rounded-md"
                 >
                   <option value="" disabled>Any Disease?</option>
@@ -380,10 +403,10 @@ const RegisterUser = () => {
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.3 }}
                   >
-                    <textarea 
-                      {...register("disease_description")} 
-                      placeholder="Describe the disease" 
-                      className="w-full p-2 border border-gray-300 rounded-md" 
+                    <textarea
+                      {...register("disease_description")}
+                      placeholder="Describe the disease"
+                      className="w-full p-2 border border-gray-300 rounded-md"
                     />
                     {errors.disease_description && <p className="text-red-500">{errors.disease_description.message}</p>}
                   </motion.div>
@@ -415,6 +438,8 @@ const RegisterUser = () => {
           )}
         </AnimatePresence>
       </motion.form>
+
+      <PopupMessage message={popupMessage?.text} type={popupMessage?.type} />
     </motion.div>
   );
 };
