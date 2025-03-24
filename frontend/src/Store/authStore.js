@@ -8,14 +8,12 @@ export const useAuthStore = create((set) => ({
   error: null,
 
   login: async (stakeholder, credentials) => {
-    console.log('Login function called with:', { stakeholder, credentials });
     set({ loading: true, error: null });
     try {
       const response = await axios.post('http://localhost:5000/api/auth/login', {
         stakeholder,
         ...credentials,
       });
-      console.log('API response:', response.data);
 
       const userData =
         stakeholder === 'employee'

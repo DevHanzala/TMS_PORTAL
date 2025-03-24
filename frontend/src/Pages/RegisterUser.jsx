@@ -69,7 +69,6 @@ const RegisterUser = () => {
   };
 
   const onSubmit = async (data) => {
-    console.log("🚀 Form submitted with data:", data);
     if (!isValid) {
       console.error("❌ Validation failed:", errors);
       showPopup("Validation failed. Please check your inputs.", "error");
@@ -79,7 +78,6 @@ const RegisterUser = () => {
     try {
       const result = await registerUser(data);
       if (result) {
-        console.log("✅ User registered successfully:", result);
         showPopup("User added successfully!");
         reset();
         setImagePreview(null);

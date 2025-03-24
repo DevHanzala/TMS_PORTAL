@@ -167,7 +167,6 @@ export const registerUser = async (req, res) => {
     });
 
     // Log success and send response
-    console.log("User created:", newUser.toJSON());
     res.status(201).json({ message: "User registered successfully", user: newUser.toJSON() });
   } catch (error) {
     // Handle errors (validation or server issues)

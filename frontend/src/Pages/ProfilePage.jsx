@@ -29,8 +29,6 @@ const ProfilePage = () => {
     return <div className="text-center text-red-500 p-4">Please log in to view your profile.</div>;
   }
 
-  // Debug: Log the full user object
-  console.log("User data:", user);
 
   // Check if user is HR (minimal data) or employee (full data)
   const isHR = user.role === "hr";

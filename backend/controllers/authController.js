@@ -9,7 +9,6 @@ dotenv.config();
 export const authController = {
   login: async (req, res) => {
     const { stakeholder, email, cnic, password } = req.body;
-    console.log('Received login request:', req.body);
 
     try {
       if (stakeholder === 'employee') {
@@ -180,7 +179,6 @@ export const authController = {
       }
 
       const user = users[0];
-      console.log('Raw user data from DB (profile):', user);
 
       let imageBase64 = null;
       if (user.image) {
