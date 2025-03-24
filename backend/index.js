@@ -1,8 +1,8 @@
-// Import required dependencies
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { sequelize, connectDB } from "./DB/DBconnection.js";
+import path from "path"
 
 // Import models
 import "./models/userModel.js";
@@ -21,6 +21,8 @@ import payrollRoutes from "./routes/payrollRoute.js";      // Payroll routes
 
 // Load environment variables from .env file
 dotenv.config();
+
+const _dirname=path.resolve()
 
 // Initialize Express app
 const app = express();
@@ -44,6 +46,12 @@ app.use("/api/files", fileRoutes);         // File-related routes
 app.use("/api/auth", authRoutes);          // Authentication routes
 app.use("/api/exemployees", exEmployeeRoutes); // Ex-employee routes
 app.use("/api/payrolls", payrollRoutes);   // Payroll routes
+
+
+app.use(express.static(path.join(_dirname,"/frontend/dist")))
+app.get('*',(_,res)=>{
+  res.sendFile(path.resolve(_dirname,"frontend","dist","index.html"))
+})
 
 // Root endpoint
 app.get("/", (req, res) => {
