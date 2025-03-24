@@ -1,6 +1,10 @@
 import { sequelize } from "../DB/DBconnection.js";
 import { QueryTypes } from "sequelize";
 import HrUser from "../models/hrUsers.js";
+import dotenv from "dotenv";
+
+// Load environment variables from .env file
+dotenv.config();
 
 export const authController = {
   login: async (req, res) => {
@@ -90,7 +94,8 @@ export const authController = {
           return res.status(400).json({ message: 'Password is required for Super Admin login' });
         }
 
-        const superAdminPassword = 'tmsportal123';
+        // Use environment variable for Super Admin password
+        const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD;
         if (password !== superAdminPassword) {
           return res.status(401).json({ message: 'Invalid Super Admin password' });
         }

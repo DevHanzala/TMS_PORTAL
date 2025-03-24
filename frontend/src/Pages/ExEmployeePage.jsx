@@ -54,7 +54,7 @@ const ExEmployeePage = () => {
     const fetchData = async () => {
       try {
         await fetchExEmployees();
-        showPopup("Ex-employees fetched successfully");
+        // Removed showPopup here to avoid showing "fetched successfully" on page load
       } catch (err) {
         showPopup("Failed to fetch ex-employees", "error");
       }
@@ -76,7 +76,7 @@ const ExEmployeePage = () => {
     if (window.confirm("Are you sure you want to permanently delete this ex-employee?")) {
       try {
         await deleteExEmployee(exEmployeeId);
-        showPopup("Ex-employee deleted successfully");
+        showPopup("Ex-employee deleted successfully"); // Popup only shown here
       } catch (err) {
         showPopup("Failed to delete ex-employee", "error");
       }
@@ -224,7 +224,9 @@ const ExEmployeePage = () => {
                       <CreditCard className="h-5 w-5 text-gray-400" />
                       <div><p className="text-sm text-gray-500">CNIC</p><p className="font-medium">{viewingExEmployee.cnic}</p></div>
                     </div>
-                    <div className="flex items-center space-x-3">
+                    <div className="flex
+
+ items-center space-x-3">
                       <Mail className="h-5 w-5 text-gray-400" />
                       <div><p className="text-sm text-gray-500">Email</p><p className="font-medium">{viewingExEmployee.email}</p></div>
                     </div>
