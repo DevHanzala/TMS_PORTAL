@@ -9,7 +9,7 @@ import AllRegisteredUsers from "./Pages/Allusers";
 import UserList from "./Pages/UserList";
 import AuthPage from "./Pages/authPage";
 import ProfilePage from "./Pages/ProfilePage";
-import ExEmployeePage from "./Pages/exEmployeePage";
+import ExEmployeePage from "./Pages/ExEmployeePage";
 import { useAuthStore } from "./Store/authStore";
 
 const Layout = ({ children }) => {
